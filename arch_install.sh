@@ -455,9 +455,30 @@ create_user() {
     echo -en "$password\n$password" | passwd "$name"
 }
 
+clean() {
+    local dev="/dev/$DRIVE"
+
+    umount -R /mnt
+    swapoff /dev/$LVM_GROUP/swap
+    vgchange -an
+    vgremove -y $LVM_GROUP
+    if [ -n "$ENC_DEV_NAME" ]
+    then
+        cryptsetup luksClose /dev/mapper/$ENC_DEV_NAME
+    fi
+
+    parted -s "$dev" \
+	rm 2 \
+	rm 1 \
+        mklabel gpt
+}
+
 if [ "$1" == "chroot" ]
 then
     configure
+elif [ "$1" == "clean" ]
+then
+    clean
 else
     setup
 fi
