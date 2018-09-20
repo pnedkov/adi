@@ -239,6 +239,7 @@ install_base() {
 
     pacstrap /mnt base base-devel
     genfstab /mnt >> /mnt/etc/fstab
+    cp -f /etc/resolv.conf /mnt/etc/resolv.conf
 }
 
 unmount_filesystems() {
