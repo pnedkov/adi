@@ -10,11 +10,17 @@ FS='xfs'
 # LVM group name
 LVM_GROUP='archvg'
 
-# Hostname
-HOSTNAME='archy'
+# Size of swap LV
+SWAP_SIZE='2G'
+
+# Size of root LV
+ROOT_SIZE='16G'
 
 # Encryption device - encrypts everything except /boot (leave blank to disable)
 ENC_DEV_NAME='cryptlvm'
+
+# Hostname
+HOSTNAME='archy'
 
 # Passphrase used to encrypt the drive (leave blank to be prompted)
 ENC_DEV_PASSPHRASE='apasswd'
@@ -198,9 +204,9 @@ setup_lvm() {
     pvcreate "$lvm_pv_dev"
     vgcreate "$LVM_GROUP" "$lvm_pv_dev"
 
-    lvcreate -L 2G "$LVM_GROUP" -n swap
+    lvcreate -L $SWAP_SIZE "$LVM_GROUP" -n swap
 
-    lvcreate -L 16G "$LVM_GROUP" -n root
+    lvcreate -L $ROOT_SIZE "$LVM_GROUP" -n root
 
     lvcreate -l 100%FREE "$LVM_GROUP" -n home
 
