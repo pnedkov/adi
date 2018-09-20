@@ -201,14 +201,14 @@ encrypt_drive() {
 setup_lvm() {
     local lvm_pv_dev="$1"; shift
 
-    pvcreate "$lvm_pv_dev"
-    vgcreate "$LVM_GROUP" "$lvm_pv_dev"
+    pvcreate -y "$lvm_pv_dev"
+    vgcreate -y "$LVM_GROUP" "$lvm_pv_dev"
 
-    lvcreate -L $SWAP_SIZE "$LVM_GROUP" -n swap
+    lvcreate -y -L $SWAP_SIZE "$LVM_GROUP" -n swap
 
-    lvcreate -L $ROOT_SIZE "$LVM_GROUP" -n root
+    lvcreate -y -L $ROOT_SIZE "$LVM_GROUP" -n root
 
-    lvcreate -l 100%FREE "$LVM_GROUP" -n home
+    lvcreate -y -l 100%FREE "$LVM_GROUP" -n home
 
     #vgchange -ay
 }
