@@ -174,6 +174,9 @@ configure() {
     fi
     create_user "$USER_NAME" "$USER_PASSWORD"
 
+    headline "Configuring userland"
+    set_userland
+
     rm -f /setup.sh
 }
 
@@ -469,6 +472,31 @@ create_user() {
 
     useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$name"
     echo -en "$password\n$password" | passwd "$name"
+}
+
+set_userland() {
+
+    if [ -n "$PACKAGES_WM" ]
+    then
+        cat > /etc/sddm.conf <<EOF
+[Autologin]
+Relogin=false
+Session=
+User=
+
+[General]
+HaltCommand=
+RebootCommand=
+
+[Theme]
+Current=breeze
+CursorTheme=breeze_cursors
+
+[Users]
+MaximumUid=65000
+MinimumUid=1000
+EOF
+    fi
 }
 
 ###
