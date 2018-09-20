@@ -446,6 +446,11 @@ EOF
 set_daemons() {
 
     systemctl enable sshd.service
+
+    if [ -n "$PACKAGES_WM" ]
+    then
+        systemctl enable sddm.service
+    fi
 }
 
 set_sudoers() {
