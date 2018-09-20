@@ -31,9 +31,8 @@ USER_PASSWORD='cpasswd'
 # System timezone
 TIMEZONE='America/Los_Angeles'
 
-# System keymap
+# System keymap: us/dvorak
 KEYMAP='us'
-# KEYMAP='dvorak'
 
 # CPU manufacturer: intel/amd or blank
 CPU_MICROCODE='intel'
@@ -41,7 +40,7 @@ CPU_MICROCODE='intel'
 # Video driver: i915/nvidia/nouveau/radeon/vesa or blank
 VIDEO_DRIVER=''
 
-# Packages
+# Packages (comment to disable)
 PACKAGES_BASE='net-tools ntp openssh sudo wget vim bash-completion'
 PACKAGES_FONTS='terminus-font ttf-hack ttf-anonymous-pro ttf-dejavu ttf-freefont ttf-liberation'
 #PACKAGES_X='xorg-server xorg-apps xorg-xinit xterm'
@@ -67,7 +66,7 @@ setup() {
 
         if [ -z "$ENC_DEV_PASSPHRASE" ]
         then
-            echo 'Enter a passphrase to encrypt the disk:'
+            echo "Enter a passphrase to encrypt $arch_dev: "
             stty -echo
             read ENC_DEV_PASSPHRASE
             stty echo
@@ -89,14 +88,14 @@ setup() {
     echo 'Installing base system'
     install_base
 
-    echo 'Chrooting into installed system to continue setup...'
+    echo 'Chrooting...'
     cp $0 /mnt/setup.sh
     arch-chroot /mnt ./setup.sh chroot
 
     if [ -f /mnt/setup.sh ]
     then
-        echo 'ERROR: Something failed inside the chroot, not unmounting filesystems so you can investigate.'
-        echo 'Make sure you unmount everything before you try to run this script again.'
+        echo "ERROR: Script failed, not unmounting filesystems so you can investigate."
+        echo "Make sure you run \'$0 clean\' before you run this script again."
     else
         echo 'Unmounting filesystems'
         unmount_filesystems
@@ -130,13 +129,13 @@ configure() {
     echo 'Setting locale'
     set_locale
 
-    echo 'Setting console keymap'
+    echo 'Configuring keyboard in console'
     set_vconsole
 
     echo 'Configuring initial ramdisk'
     set_initcpio
 
-    echo 'Configuring bootctl'
+    echo 'Configuring UEFI boot'
     set_bootctl "$arch_dev"
 
     echo "Configuring netowrk"
@@ -165,7 +164,7 @@ configure() {
         read USER_PASSWORD
         stty echo
     fi
-    echo 'Creating initial user'
+    echo "Creating user $USER_NAME"
     create_user "$USER_NAME" "$USER_PASSWORD"
 
     rm /setup.sh
@@ -182,6 +181,8 @@ partition_drive() {
         mkpart primary 512M 100% \
         set 2 lvm on
 }
+
+###
 
 encrypt_drive() {
     local dev="$1"; shift
@@ -246,6 +247,8 @@ unmount_filesystems() {
         cryptsetup luksClose /dev/mapper/$ENC_DEV_NAME
     fi
 }
+
+###
 
 install_packages() {
     local packages=''
@@ -322,6 +325,15 @@ set_hostname() {
     echo "$hostname" > /etc/hostname
 }
 
+set_hosts() {
+    local hostname="$1"; shift
+
+    cat > /etc/hosts <<EOF
+127.0.0.1 localhost.localdomain localhost $hostname
+::1       localhost.localdomain localhost $hostname
+EOF
+}
+
 set_timezone() {
     local timezone="$1"; shift
 
@@ -337,15 +349,6 @@ set_locale() {
 set_vconsole() {
     echo "KEYMAP=$KEYMAP" > /etc/vconsole.conf
     echo "FONT=ter-g16n" >> /etc/vconsole.conf
-}
-
-set_hosts() {
-    local hostname="$1"; shift
-
-    cat > /etc/hosts <<EOF
-127.0.0.1 localhost.localdomain localhost $hostname
-::1       localhost.localdomain localhost $hostname
-EOF
 }
 
 set_initcpio() {
@@ -381,11 +384,6 @@ set_initcpio() {
     mkinitcpio -p linux
 }
 
-set_daemons() {
-
-    systemctl enable sshd.service
-}
-
 set_bootctl() {
     local dev="$1"; shift
 
@@ -418,10 +416,6 @@ EOF
     fi
 }
 
-set_sudoers() {
-    sed -i -e 's/.*%wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/' /etc/sudoers
-}
-
 set_wired_network(){
 
     if [ -n "$PACKAGES_WM" ]
@@ -442,6 +436,15 @@ EOF
     fi
 }
 
+set_daemons() {
+
+    systemctl enable sshd.service
+}
+
+set_sudoers() {
+    sed -i -e 's/.*%wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/' /etc/sudoers
+}
+
 set_root_password() {
     local password="$1"; shift
 
@@ -456,6 +459,8 @@ create_user() {
     echo -en "$password\n$password" | passwd "$name"
 }
 
+###
+
 clean() {
     local dev="/dev/$DRIVE"
 
@@ -469,11 +474,14 @@ clean() {
     fi
 
     parted -s "$dev" \
-	rm 2 \
-	rm 1 \
+        rm 2 \
+        rm 1 \
         mklabel gpt
 }
 
+#
+# Main
+#
 if [ "$1" == "chroot" ]
 then
     configure
