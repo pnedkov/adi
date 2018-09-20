@@ -38,9 +38,6 @@ KEYMAP='us'
 # CPU manufacturer: intel/amd or blank
 CPU_MICROCODE='intel'
 
-# Ethernet interface (leave blank to disable)
-NET_IF='enp0s3'
-
 # Video driver: i915/nvidia/nouveau/radeon/vesa or blank
 VIDEO_DRIVER=''
 
@@ -143,10 +140,7 @@ configure() {
     set_bootctl "$arch_dev"
 
     echo "Configuring netowrk"
-    if [ -n "$NET_IF" ]
-    then
-        set_wired_network
-    fi
+    set_wired_network
 
     echo 'Setting initial daemons'
     set_daemons
@@ -430,15 +424,22 @@ set_sudoers() {
 
 set_wired_network(){
 
-    cat > /etc/systemd/network/20-wired.network <<EOF
+    if [ -n "$PACKAGES_WM" ]
+    then
+        systemctl enable NetworkManager.service
+    else
+        local default_net_if=$(ip r | grep "default via" | cut -d " " -f 5)
+
+        cat > /etc/systemd/network/20-wired.network <<EOF
 [Match]
-Name=$NET_IF
+Name=$default_net_if
 
 [Network]
 DHCP=ipv4
 EOF
 
-    systemctl enable systemd-networkd.service
+        systemctl enable systemd-networkd.service
+    fi
 }
 
 set_root_password() {
