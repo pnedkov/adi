@@ -57,13 +57,14 @@ setup() {
     local arch_dev="/dev/$DRIVE"2
     local lvm_pv="$arch_dev"
 
-    echo 'Creating partitions'
+    headline "Creating partitions"
     partition_drive "/dev/$DRIVE"
 
     if [ -n "$ENC_DEV_NAME" ]
     then
         local lvm_pv="/dev/mapper/$ENC_DEV_NAME"
 
+        headline "Encrypting partition"
         if [ -z "$ENC_DEV_PASSPHRASE" ]
         then
             echo "Enter a passphrase to encrypt $arch_dev: "
@@ -72,34 +73,34 @@ setup() {
             stty echo
         fi
 
-        echo 'Encrypting partition'
         encrypt_drive "$arch_dev"
     fi
 
-    echo 'Setting up LVM'
+    headline "Setting up LVM"
     setup_lvm "$lvm_pv"
 
-    echo 'Formatting filesystems'
+    headline "Formatting filesystems"
     format_filesystems "$boot_dev" "$LVM_GROUP"
 
-    echo 'Mounting filesystems'
+    headline "Mounting filesystems"
     mount_filesystems "$boot_dev"
 
-    echo 'Installing base system'
+    headline "Installing base system"
     install_base
 
-    echo 'Chrooting...'
+    headline "Chrooting..."
     cp $0 /mnt/setup.sh
     arch-chroot /mnt ./setup.sh chroot
 
     if [ -f /mnt/setup.sh ]
     then
-        echo "ERROR: Script failed, not unmounting filesystems so you can investigate."
+        echo -e "\n\n\e[1;31m ERROR: Script failed, not unmounting filesystems so you can investigate.\e[0m"
         echo "Make sure you run \'$0 clean\' before you run this script again."
     else
-        echo 'Unmounting filesystems'
+        headline "Unmounting filesystems"
         unmount_filesystems
-        echo 'Done! Reboot system.'
+
+        echo -e "\n\n\e[1;32m Done! Reboot system.\e[0m\n"
     fi
 }
 
@@ -111,42 +112,43 @@ configure() {
     local boot_dev="/dev/$DRIVE"1
     local arch_dev="/dev/$DRIVE"2
 
-    echo 'Installing additional packages'
+    headline "Installing additional packages"
     install_packages
 
-    echo 'Clearing package tarballs'
+    headline "Clearing package tarballs"
     clean_packages
 
-    echo 'Setting hostname'
+    headline "Setting hostname"
     set_hostname "$HOSTNAME"
 
-    echo 'Setting hosts file'
+    headline "Setting hosts file"
     set_hosts "$HOSTNAME"
 
-    echo 'Setting timezone'
+    headline "Setting timezone"
     set_timezone "$TIMEZONE"
 
-    echo 'Setting locale'
+    headline "Setting locale"
     set_locale
 
-    echo 'Configuring keyboard in console'
+    headline "Configuring keyboard in console"
     set_vconsole
 
-    echo 'Configuring initial ramdisk'
+    headline "Configuring initial ramdisk"
     set_initcpio
 
-    echo 'Configuring UEFI boot'
+    headline "Configuring UEFI boot"
     set_bootctl "$arch_dev"
 
-    echo "Configuring netowrk"
+    headline "Configuring netowrk"
     set_wired_network
 
-    echo 'Setting initial daemons'
+    headline "Setting initial daemons"
     set_daemons
 
-    echo 'Configuring sudo'
+    headline "Configuring sudo"
     set_sudoers
 
+    headline "Setting root password"
     if [ -z "$ROOT_PASSWORD" ]
     then
         echo 'Enter the root password:'
@@ -154,9 +156,9 @@ configure() {
         read ROOT_PASSWORD
         stty echo
     fi
-    echo 'Setting root password'
     set_root_password "$ROOT_PASSWORD"
 
+    headline "Creating user $USER_NAME"
     if [ -z "$USER_PASSWORD" ]
     then
         echo "Enter the password for user $USER_NAME"
@@ -164,10 +166,9 @@ configure() {
         read USER_PASSWORD
         stty echo
     fi
-    echo "Creating user $USER_NAME"
     create_user "$USER_NAME" "$USER_PASSWORD"
 
-    rm /setup.sh
+    rm -f /setup.sh
 }
 
 
@@ -478,6 +479,15 @@ clean() {
         rm 1 \
         mklabel gpt
 }
+
+###
+
+headline() {
+    echo -e "\n\n\e[1;34m#########################################"
+    echo -e "#  \e[1;36m $1"
+    echo -e "\e[1;34m#########################################\e[0m"
+}
+
 
 #
 # Main
