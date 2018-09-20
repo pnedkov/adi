@@ -46,7 +46,7 @@ PACKAGES_BASE='net-tools ntp openssh sudo wget vim bash-completion'
 PACKAGES_FONTS='terminus-font ttf-hack ttf-anonymous-pro ttf-dejavu ttf-freefont ttf-liberation'
 #PACKAGES_X='xorg-server xorg-apps xorg-xinit xterm'
 #PACKAGES_WM='plasma-desktop plasma-nm sddm sddm-kcm powerdevil alsa-utils pulseaudio plasma-pa'
-PACKAGES_USER_CLI='netcat'
+PACKAGES_USER_CLI='htop netcat'
 #PACKAGES_USER_GUI='terminator chromium'
 
 
