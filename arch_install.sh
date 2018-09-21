@@ -40,9 +40,6 @@ TIMEZONE='America/Los_Angeles'
 # System keymap: us/dvorak
 KEYMAP='us'
 
-# CPU manufacturer: intel/amd or blank
-CPU_MICROCODE='intel'
-
 # Video driver: i915/nvidia/nouveau/radeon/vesa or blank
 VIDEO_DRIVER=''
 
@@ -100,6 +97,8 @@ setup() {
 configure() {
     local boot_dev="/dev/$DRIVE"1
     local arch_dev="/dev/$DRIVE"2
+
+    detect_cpu
 
     install_packages
 
@@ -251,15 +250,29 @@ unmount_filesystems() {
 
 ###
 
+detect_cpu() {
+
+    if $(lscpu | grep -q "GenuineIntel")
+    then
+        CPU="intel"
+    elif $(lscpu | grep -q "AuthenticAMD")
+    then
+        CPU="amd"
+    else
+        CPU=""
+    fi
+}
+
+
 install_packages() {
     local packages=''
 
     headline "Installing additional packages"
 
     # CPU microcode
-    if [ -n "$CPU_MICROCODE" ]
+    if [ -n "$CPU" ]
     then
-        packages+=" $CPU_MICROCODE-ucode"
+        packages+=" $CPU-ucode"
     fi
 
     # Base
@@ -411,9 +424,9 @@ linux /vmlinuz-linux
 initrd /initramfs-linux.img
 EOF
 
-    if [ -n "$CPU_MICROCODE" ]
+    if [ -n "$CPU" ]
     then
-        sed -i -e "/initrd \/initramfs-linux.img/i initrd /$CPU_MICROCODE-ucode.img" /boot/loader/entries/arch.conf
+        sed -i -e "/initrd \/initramfs-linux.img/i initrd /$CPU-ucode.img" /boot/loader/entries/arch.conf
     fi
 
     if [ -n "$ENC_DEV_NAME" ]
