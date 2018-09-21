@@ -61,49 +61,32 @@ PACKAGES_USER_CLI='htop netcat'
 setup() {
     local boot_dev="/dev/$DRIVE"1
     local arch_dev="/dev/$DRIVE"2
-    local lvm_pv="$arch_dev"
 
-    headline "Creating partitions"
     partition_drive
 
     if [ -n "$ENC_DEV_NAME" ]
     then
         local lvm_pv="/dev/mapper/$ENC_DEV_NAME"
-
-        headline "Encrypting partition"
-        if [ -z "$ENC_DEV_PASSPHRASE" ]
-        then
-            echo "Enter a passphrase to encrypt $arch_dev: "
-            stty -echo
-            read ENC_DEV_PASSPHRASE
-            stty echo
-        fi
-
         encrypt_drive
+    else
+        local lvm_pv="$arch_dev"
     fi
 
-    headline "Setting up LVM"
     setup_lvm
 
-    headline "Formatting filesystems"
     format_filesystems
 
-    headline "Mounting filesystems"
     mount_filesystems
 
-    headline "Installing base system"
     install_base
 
-    headline "Chrooting..."
-    cp $0 /mnt/setup.sh
-    arch-chroot /mnt ./setup.sh chroot
+    arch_chroot
 
     if [ -f /mnt/setup.sh ]
     then
         echo -e "\n\n\e[1;31m ERROR: Script failed, not unmounting filesystems so you can investigate.\e[0m"
         echo "Make sure you run \'$0 clean\' before you run this script again."
     else
-        headline "Unmounting filesystems"
         unmount_filesystems
 
         echo -e "\n\n\e[1;32m Done! Reboot system.\e[0m\n"
@@ -118,63 +101,34 @@ configure() {
     local boot_dev="/dev/$DRIVE"1
     local arch_dev="/dev/$DRIVE"2
 
-    headline "Installing additional packages"
     install_packages
 
-    headline "Clearing package tarballs"
     clean_packages
 
-    headline "Setting hostname"
     set_hostname
 
-    headline "Setting hosts file"
     set_hosts
 
-    headline "Setting timezone"
     set_timezone
 
-    headline "Setting locale"
     set_locale
 
-    headline "Configuring keyboard in console"
     set_vconsole
 
-    headline "Configuring initial ramdisk"
     set_initcpio
 
-    headline "Configuring UEFI boot"
     set_bootctl
 
-    headline "Configuring netowrk"
     set_wired_network
 
-    headline "Setting initial daemons"
     set_daemons
 
-    headline "Configuring sudo"
     set_sudoers
 
-    headline "Setting root password"
-    if [ -z "$ROOT_PASSWORD" ]
-    then
-        echo 'Enter the root password:'
-        stty -echo
-        read ROOT_PASSWORD
-        stty echo
-    fi
     set_root_password
 
-    headline "Creating user $USER_NAME"
-    if [ -z "$USER_PASSWORD" ]
-    then
-        echo "Enter the password for user $USER_NAME"
-        stty -echo
-        read USER_PASSWORD
-        stty echo
-    fi
     create_user
 
-    headline "Configuring userland"
     set_userland
 
     rm -f /setup.sh
@@ -182,6 +136,8 @@ configure() {
 
 
 partition_drive() {
+
+    headline "Creating partitions"
 
     parted -s "/dev/$DRIVE" \
         mklabel gpt \
@@ -195,11 +151,23 @@ partition_drive() {
 
 encrypt_drive() {
 
+    headline "Encrypting partition"
+
+    if [ -z "$ENC_DEV_PASSPHRASE" ]
+    then
+        echo "Enter a passphrase to encrypt $arch_dev: "
+        stty -echo
+        read ENC_DEV_PASSPHRASE
+        stty echo
+    fi
+
     echo -en "$ENC_DEV_PASSPHRASE" | cryptsetup luksFormat "$arch_dev"
     echo -en "$ENC_DEV_PASSPHRASE" | cryptsetup luksOpen "$arch_dev" "$ENC_DEV_NAME"
 }
 
 setup_lvm() {
+
+    headline "Setting up LVM"
 
     pvcreate -y "$lvm_pv"
     vgcreate -y "$LVM_GROUP" "$lvm_pv"
@@ -219,6 +187,8 @@ setup_lvm() {
 
 format_filesystems() {
 
+    headline "Formatting filesystems"
+
     mkfs.vfat -F32 $boot_dev
 
     mkfs.$FS /dev/$LVM_GROUP/root
@@ -232,6 +202,8 @@ format_filesystems() {
 }
 
 mount_filesystems() {
+
+    headline "Mounting filesystems"
 
     mount /dev/$LVM_GROUP/root /mnt
 
@@ -249,6 +221,8 @@ mount_filesystems() {
 
 install_base() {
 
+    headline "Installing base system"
+
     echo 'Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch' >> /etc/pacman.d/mirrorlist
 
     pacstrap /mnt base base-devel
@@ -256,7 +230,17 @@ install_base() {
     cp -f /etc/resolv.conf /mnt/etc/resolv.conf
 }
 
+arch_chroot() {
+
+    headline "Chrooting..."
+
+    cp $0 /mnt/setup.sh
+    arch-chroot /mnt ./setup.sh chroot
+}
+
 unmount_filesystems() {
+
+    headline "Unmounting filesystems"
 
     umount -R /mnt
     swapoff /dev/$LVM_GROUP/swap
@@ -271,6 +255,8 @@ unmount_filesystems() {
 
 install_packages() {
     local packages=''
+
+    headline "Installing additional packages"
 
     # CPU microcode
     if [ -n "$CPU_MICROCODE" ]
@@ -335,15 +321,22 @@ install_packages() {
 }
 
 clean_packages() {
+
+    headline "Clearing package tarballs"
+
     yes | pacman -Scc
 }
 
 set_hostname() {
 
+    headline "Setting hostname"
+
     echo "$HOSTNAME" > /etc/hostname
 }
 
 set_hosts() {
+
+    headline "Setting hosts file"
 
     cat > /etc/hosts <<EOF
 127.0.0.1 localhost.localdomain localhost $HOSTNAME
@@ -353,36 +346,31 @@ EOF
 
 set_timezone() {
 
+    headline "Setting timezone"
+
     ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
 }
 
 set_locale() {
+
+    headline "Setting locale"
+
     echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
     locale-gen
     locale > /etc/locale.conf
 }
 
 set_vconsole() {
+
+    headline "Configuring keyboard in console"
+
     echo "KEYMAP=$KEYMAP" > /etc/vconsole.conf
     echo "FONT=ter-g16n" >> /etc/vconsole.conf
 }
 
 set_initcpio() {
-    local vid
 
-    if [ "$VIDEO_DRIVER" = "i915" ]
-    then
-        vid='i915'
-    elif [ "$VIDEO_DRIVER" = "nouveau" ]
-    then
-        vid='nouveau'
-    elif [ "$VIDEO_DRIVER" = "nvidia" ]
-    then
-        vid='nvidia'
-    elif [ "$VIDEO_DRIVER" = "radeon" ]
-    then
-        vid='radeon'
-    fi
+    headline "Configuring initial ramdisk"
 
     if [ -n "$ENC_DEV_NAME" ]
     then
@@ -392,7 +380,12 @@ set_initcpio() {
     fi
 
     # Set MODULES in /etc/mkinitcpio.conf
-    sed -i -e "s/^MODULES=.*/MODULES=\"$FS $vid\"/" /etc/mkinitcpio.conf
+    if [ -z "$VIDEO_DRIVER" ]
+    then
+        sed -i -e "s/^MODULES=.*/MODULES=\"$FS\"/" /etc/mkinitcpio.conf
+    else
+        sed -i -e "s/^MODULES=.*/MODULES=\"$FS $VIDEO_DRIVER\"/" /etc/mkinitcpio.conf
+    fi
 
     # Set HOOKS in /etc/mkinitcpio.conf
     sed -i -e "s/^HOOKS=.*/HOOKS=($MY_HOOKS)/" /etc/mkinitcpio.conf
@@ -401,6 +394,8 @@ set_initcpio() {
 }
 
 set_bootctl() {
+
+    headline "Configuring UEFI boot"
 
     bootctl install
 
@@ -433,6 +428,8 @@ EOF
 
 set_wired_network(){
 
+    headline "Configuring netowrk"
+
     if [ -n "$PACKAGES_WM" ]
     then
         systemctl enable NetworkManager.service
@@ -453,6 +450,8 @@ EOF
 
 set_daemons() {
 
+    headline "Setting initial daemons"
+
     systemctl enable sshd.service
 
     if [ -n "$PACKAGES_WM" ]
@@ -462,21 +461,46 @@ set_daemons() {
 }
 
 set_sudoers() {
+
+    headline "Configuring sudo"
+
     sed -i -e 's/.*%wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/' /etc/sudoers
 }
 
 set_root_password() {
+
+    headline "Setting root password"
+
+    if [ -z "$ROOT_PASSWORD" ]
+    then
+        echo 'Enter the root password:'
+        stty -echo
+        read ROOT_PASSWORD
+        stty echo
+    fi
 
     echo -en "$ROOT_PASSWORD\n$ROOT_PASSWORD" | passwd
 }
 
 create_user() {
 
+    headline "Creating user $USER_NAME"
+
+    if [ -z "$USER_PASSWORD" ]
+    then
+        echo "Enter the password for user $USER_NAME"
+        stty -echo
+        read USER_PASSWORD
+        stty echo
+    fi
+
     useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$USER_NAME"
     echo -en "$USER_PASSWORD\n$USER_PASSWORD" | passwd "$USER_NAME"
 }
 
 set_userland() {
+
+    headline "Configuring userland"
 
     if [ -n "$PACKAGES_WM" ]
     then
@@ -504,7 +528,6 @@ EOF
 ###
 
 clean() {
-    local dev="/dev/$DRIVE"
 
     umount -R /mnt
     swapoff /dev/$LVM_GROUP/swap
@@ -515,7 +538,7 @@ clean() {
         cryptsetup luksClose /dev/mapper/$ENC_DEV_NAME
     fi
 
-    parted -s "$dev" \
+    parted -s "/dev/$DRIVE" \
         rm 2 \
         rm 1 \
         mklabel gpt
