@@ -19,16 +19,16 @@ ROOT_SIZE='16G'
 # Encryption device - encrypts everything except /boot (leave blank to disable)
 ENC_DEV_NAME='cryptlvm'
 
-# Hostname
-HOSTNAME='archy'
-
 # Passphrase used to encrypt the drive (leave blank to be prompted)
 ENC_DEV_PASSPHRASE='apasswd'
+
+# Hostname
+HOSTNAME='archy'
 
 # Root password (leave blank to be prompted)
 ROOT_PASSWORD='bpasswd'
 
-# Main user to create (by default, added to wheel group)
+# Main user member of wheel group (leave blank to disable)
 USER_NAME='plamen'
 
 # The main user's password (leave blank to be prompted)
@@ -155,10 +155,8 @@ encrypt_drive() {
 
     if [ -z "$ENC_DEV_PASSPHRASE" ]
     then
-        echo "Enter a passphrase to encrypt $arch_dev: "
-        stty -echo
-        read ENC_DEV_PASSPHRASE
-        stty echo
+        password_prompt "Enter a passphrase to encrypt $arch_dev: "
+        ENC_DEV_PASSPHRASE="$password"
     fi
 
     echo -en "$ENC_DEV_PASSPHRASE" | cryptsetup luksFormat "$arch_dev"
@@ -473,10 +471,8 @@ set_root_password() {
 
     if [ -z "$ROOT_PASSWORD" ]
     then
-        echo 'Enter the root password:'
-        stty -echo
-        read ROOT_PASSWORD
-        stty echo
+        password_prompt "Enter the root password: "
+        ROOT_PASSWORD="$password"
     fi
 
     echo -en "$ROOT_PASSWORD\n$ROOT_PASSWORD" | passwd
@@ -488,10 +484,8 @@ create_user() {
 
     if [ -z "$USER_PASSWORD" ]
     then
-        echo "Enter the password for user $USER_NAME"
-        stty -echo
-        read USER_PASSWORD
-        stty echo
+        password_prompt "Enter the password for user $USER_NAME"
+        USER_PASSWORD="$password"
     fi
 
     useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$USER_NAME"
@@ -547,9 +541,38 @@ clean() {
 ###
 
 headline() {
+
     echo -e "\n\n\e[1;34m#########################################"
     echo -e "#  \e[1;36m $1"
     echo -e "\e[1;34m#########################################\e[0m"
+}
+
+password_prompt() {
+    local msg="$1"; shift
+
+    while true; do
+        echo -n "$msg"
+        stty -echo
+        read password
+        stty echo
+        echo
+
+        echo -n "Password again: "
+        stty -echo
+        read password2
+        stty echo
+        echo
+
+        if [ -z "$password" ]
+        then
+            echo "Password cannot be empty. Try again."
+        elif [ "$password" != "$password2" ]
+        then
+            echo "Passwords do not match. Try again."
+        else
+            break
+        fi
+    done
 }
 
 
