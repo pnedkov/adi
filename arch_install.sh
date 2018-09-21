@@ -64,7 +64,7 @@ setup() {
     local lvm_pv="$arch_dev"
 
     headline "Creating partitions"
-    partition_drive "/dev/$DRIVE"
+    partition_drive
 
     if [ -n "$ENC_DEV_NAME" ]
     then
@@ -79,17 +79,17 @@ setup() {
             stty echo
         fi
 
-        encrypt_drive "$arch_dev"
+        encrypt_drive
     fi
 
     headline "Setting up LVM"
-    setup_lvm "$lvm_pv"
+    setup_lvm
 
     headline "Formatting filesystems"
-    format_filesystems "$boot_dev" "$LVM_GROUP"
+    format_filesystems
 
     headline "Mounting filesystems"
-    mount_filesystems "$boot_dev"
+    mount_filesystems
 
     headline "Installing base system"
     install_base
@@ -125,13 +125,13 @@ configure() {
     clean_packages
 
     headline "Setting hostname"
-    set_hostname "$HOSTNAME"
+    set_hostname
 
     headline "Setting hosts file"
-    set_hosts "$HOSTNAME"
+    set_hosts
 
     headline "Setting timezone"
-    set_timezone "$TIMEZONE"
+    set_timezone
 
     headline "Setting locale"
     set_locale
@@ -143,7 +143,7 @@ configure() {
     set_initcpio
 
     headline "Configuring UEFI boot"
-    set_bootctl "$arch_dev"
+    set_bootctl
 
     headline "Configuring netowrk"
     set_wired_network
@@ -162,7 +162,7 @@ configure() {
         read ROOT_PASSWORD
         stty echo
     fi
-    set_root_password "$ROOT_PASSWORD"
+    set_root_password
 
     headline "Creating user $USER_NAME"
     if [ -z "$USER_PASSWORD" ]
@@ -172,7 +172,7 @@ configure() {
         read USER_PASSWORD
         stty echo
     fi
-    create_user "$USER_NAME" "$USER_PASSWORD"
+    create_user
 
     headline "Configuring userland"
     set_userland
@@ -182,9 +182,8 @@ configure() {
 
 
 partition_drive() {
-    local dev="$1"; shift
 
-    parted -s "$dev" \
+    parted -s "/dev/$DRIVE" \
         mklabel gpt \
         mkpart primary 0% 512M \
         set 1 esp on \
@@ -195,17 +194,15 @@ partition_drive() {
 ###
 
 encrypt_drive() {
-    local dev="$1"; shift
 
-    echo -en "$ENC_DEV_PASSPHRASE" | cryptsetup luksFormat "$dev"
-    echo -en "$ENC_DEV_PASSPHRASE" | cryptsetup luksOpen "$dev" "$ENC_DEV_NAME"
+    echo -en "$ENC_DEV_PASSPHRASE" | cryptsetup luksFormat "$arch_dev"
+    echo -en "$ENC_DEV_PASSPHRASE" | cryptsetup luksOpen "$arch_dev" "$ENC_DEV_NAME"
 }
 
 setup_lvm() {
-    local lvm_pv_dev="$1"; shift
 
-    pvcreate -y "$lvm_pv_dev"
-    vgcreate -y "$LVM_GROUP" "$lvm_pv_dev"
+    pvcreate -y "$lvm_pv"
+    vgcreate -y "$LVM_GROUP" "$lvm_pv"
 
     lvcreate -y -L $SWAP_SIZE "$LVM_GROUP" -n swap
 
@@ -221,13 +218,13 @@ setup_lvm() {
 }
 
 format_filesystems() {
-    local boot_dev="$1"; shift
 
     mkfs.vfat -F32 $boot_dev
 
     mkfs.$FS /dev/$LVM_GROUP/root
 
     if [ -e /dev/$LVM_GROUP/home ]
+    then
         mkfs.$FS /dev/$LVM_GROUP/home
     fi
 
@@ -235,7 +232,6 @@ format_filesystems() {
 }
 
 mount_filesystems() {
-    local boot_dev="$1"; shift
 
     mount /dev/$LVM_GROUP/root /mnt
 
@@ -243,6 +239,7 @@ mount_filesystems() {
     mount "$boot_dev" /mnt/boot
 
     if [ -e /dev/$LVM_GROUP/home ]
+    then
         mkdir /mnt/home
         mount /dev/$LVM_GROUP/home /mnt/home
     fi
@@ -342,22 +339,19 @@ clean_packages() {
 }
 
 set_hostname() {
-    local hostname="$1"; shift
 
-    echo "$hostname" > /etc/hostname
+    echo "$HOSTNAME" > /etc/hostname
 }
 
 set_hosts() {
-    local hostname="$1"; shift
 
     cat > /etc/hosts <<EOF
-127.0.0.1 localhost.localdomain localhost $hostname
-::1       localhost.localdomain localhost $hostname
+127.0.0.1 localhost.localdomain localhost $HOSTNAME
+::1       localhost.localdomain localhost $HOSTNAME
 EOF
 }
 
 set_timezone() {
-    local timezone="$1"; shift
 
     ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
 }
@@ -407,7 +401,6 @@ set_initcpio() {
 }
 
 set_bootctl() {
-    local dev="$1"; shift
 
     bootctl install
 
@@ -417,7 +410,7 @@ default arch
 editor 0
 EOF
 
-    arch_dev_uuid=$(blkid $dev | sed -n 's/.* UUID=\"\([^\"]*\)\".*/\1/p')
+    arch_dev_uuid=$(blkid $arch_dev | sed -n 's/.* UUID=\"\([^\"]*\)\".*/\1/p')
 
     cat > /boot/loader/entries/arch.conf <<EOF
 title Arch Linux
@@ -473,17 +466,14 @@ set_sudoers() {
 }
 
 set_root_password() {
-    local password="$1"; shift
 
-    echo -en "$password\n$password" | passwd
+    echo -en "$ROOT_PASSWORD\n$ROOT_PASSWORD" | passwd
 }
 
 create_user() {
-    local name="$1"; shift
-    local password="$1"; shift
 
-    useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$name"
-    echo -en "$password\n$password" | passwd "$name"
+    useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$USER_NAME"
+    echo -en "$USER_PASSWORD\n$USER_PASSWORD" | passwd "$USER_NAME"
 }
 
 set_userland() {
