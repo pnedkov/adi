@@ -28,7 +28,7 @@ HOSTNAME='archy'
 # Root password (leave blank to be prompted)
 ROOT_PASSWORD='bpasswd'
 
-# Main user member of wheel group (leave blank to disable)
+# Main user member of wheel group (leave blank to disable user creation)
 USER_NAME='plamen'
 
 # The main user's password (leave blank to be prompted)
@@ -480,16 +480,19 @@ set_root_password() {
 
 create_user() {
 
-    headline "Creating user $USER_NAME"
-
-    if [ -z "$USER_PASSWORD" ]
+    if [ -n "$USER_NAME" ]
     then
-        password_prompt "Enter the password for user $USER_NAME"
-        USER_PASSWORD="$password"
-    fi
+        headline "Creating user $USER_NAME"
 
-    useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$USER_NAME"
-    echo -en "$USER_PASSWORD\n$USER_PASSWORD" | passwd "$USER_NAME"
+        if [ -z "$USER_PASSWORD" ]
+        then
+            password_prompt "Enter the password for user $USER_NAME: "
+            USER_PASSWORD="$password"
+        fi
+
+        useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$USER_NAME"
+        echo -en "$USER_PASSWORD\n$USER_PASSWORD" | passwd "$USER_NAME"
+    fi
 }
 
 set_userland() {
