@@ -4,7 +4,7 @@ set -e
 # Drive to install to
 DRIVE='sda'
 
-# File system for root and home: xfs/ext4
+# File system for / and /home: xfs/ext4
 FS='xfs'
 
 # LVM group name
@@ -13,7 +13,7 @@ LVM_GROUP='archvg'
 # Size of swap LV
 SWAP_SIZE='2G'
 
-# Size of root LV
+# Size of root LV (leave blank for 100%FREE and no separate /home LV)
 ROOT_SIZE='16G'
 
 # Encryption device - encrypts everything except /boot (leave blank to disable)
@@ -209,9 +209,13 @@ setup_lvm() {
 
     lvcreate -y -L $SWAP_SIZE "$LVM_GROUP" -n swap
 
-    lvcreate -y -L $ROOT_SIZE "$LVM_GROUP" -n root
-
-    lvcreate -y -l 100%FREE "$LVM_GROUP" -n home
+    if [ -n "$ROOT_SIZE" ]
+    then
+        lvcreate -y -L $ROOT_SIZE "$LVM_GROUP" -n root
+        lvcreate -y -l 100%FREE "$LVM_GROUP" -n home
+    else
+        lvcreate -y -l 100%FREE "$LVM_GROUP" -n root
+    fi
 
     #vgchange -ay
 }
@@ -222,7 +226,10 @@ format_filesystems() {
     mkfs.vfat -F32 $boot_dev
 
     mkfs.$FS /dev/$LVM_GROUP/root
-    mkfs.$FS /dev/$LVM_GROUP/home
+
+    if [ -e /dev/$LVM_GROUP/home ]
+        mkfs.$FS /dev/$LVM_GROUP/home
+    fi
 
     mkswap /dev/$LVM_GROUP/swap
 }
@@ -231,10 +238,15 @@ mount_filesystems() {
     local boot_dev="$1"; shift
 
     mount /dev/$LVM_GROUP/root /mnt
+
     mkdir /mnt/boot
-    mkdir /mnt/home
     mount "$boot_dev" /mnt/boot
-    mount /dev/$LVM_GROUP/home /mnt/home
+
+    if [ -e /dev/$LVM_GROUP/home ]
+        mkdir /mnt/home
+        mount /dev/$LVM_GROUP/home /mnt/home
+    fi
+
     swapon /dev/$LVM_GROUP/swap
 }
 
