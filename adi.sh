@@ -40,7 +40,7 @@ TIMEZONE='America/Los_Angeles'
 # System keymap: us/dvorak
 KEYMAP='us'
 
-# Video driver: i915/nvidia/nouveau/radeon/vesa or blank
+# Video driver: amdgpu/ati/dummy/fbdev/intel/nouveau/nvidia/vesa/vmware/voodoo/qxl or blank
 VIDEO_DRIVER=''
 
 # Packages CLI (comment to disable)
@@ -320,21 +320,14 @@ install_packages() {
         packages+=" $PACKAGES_USER_GUI"
     fi
 
-    if [ "$VIDEO_DRIVER" = "i915" ]
+    if [ -n "$VIDEO_DRIVER" ]
     then
-        packages+=' xf86-video-intel libva-intel-driver'
-    elif [ "$VIDEO_DRIVER" = "nvidia" ]
-    then
-        packages+=' nvidia'
-    elif [ "$VIDEO_DRIVER" = "nouveau" ]
-    then
-        packages+=' xf86-video-nouveau'
-    elif [ "$VIDEO_DRIVER" = "radeon" ]
-    then
-        packages+=' xf86-video-ati'
-    elif [ "$VIDEO_DRIVER" = "vesa" ]
-    then
-        packages+=' xf86-video-vesa'
+        if [ "$VIDEO_DRIVER" == "nvidia" ]
+        then
+            packages+=" nvidia nvidia-utils nvidia-settings"
+        else
+            packages+=" xf86-video-$VIDEO_DRIVER"
+        fi
     fi
 
     pacman -Sy --noconfirm $packages
@@ -400,11 +393,10 @@ set_initcpio() {
     fi
 
     # Set MODULES in /etc/mkinitcpio.conf
-    if [ -z "$VIDEO_DRIVER" ]
+    sed -i -e "s/^MODULES=.*/MODULES=\"$FS\"/" /etc/mkinitcpio.conf
+    if [[ "$VIDEO_DRIVER" =~ ^(amdgpu|nvidia|nouveau|qlx)$ ]]
     then
-        sed -i -e "s/^MODULES=.*/MODULES=\"$FS\"/" /etc/mkinitcpio.conf
-    else
-        sed -i -e "s/^MODULES=.*/MODULES=\"$FS $VIDEO_DRIVER\"/" /etc/mkinitcpio.conf
+        sed -e "s/^MODULES=\"\(.*\)\"/MODULES=\"\1 $VIDEO_DRIVER\"/" /etc/mkinitcpio.conf
     fi
 
     # Set HOOKS in /etc/mkinitcpio.conf
