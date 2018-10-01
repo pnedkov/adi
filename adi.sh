@@ -325,6 +325,11 @@ install_packages() {
         if [ "$VIDEO_DRIVER" == "nvidia" ]
         then
             packages+=" nvidia nvidia-utils nvidia-settings"
+
+            cat > /etc/modprobe.d/nvidia.conf <<EOF
+options nvidia_drm modeset=1
+blacklist nouveau
+EOF
         else
             packages+=" xf86-video-$VIDEO_DRIVER"
         fi
@@ -397,6 +402,12 @@ set_initcpio() {
     if [[ "$VIDEO_DRIVER" =~ ^(amdgpu|nvidia|nouveau|qlx)$ ]]
     then
         sed -e "s/^MODULES=\"\(.*\)\"/MODULES=\"\1 $VIDEO_DRIVER\"/" /etc/mkinitcpio.conf
+    fi
+
+    # Set FILES in /etc/mkinitcpio.conf
+    if [ "$VIDEO_DRIVER" == "nvidia" ]
+    then
+        sed -i -e "s/^FILES=.*/FILES=\"/etc/modprobe.d/nvidia.conf\"/" /etc/modprobe.d/nvidia.conf
     fi
 
     # Set HOOKS in /etc/mkinitcpio.conf
