@@ -65,8 +65,6 @@ PACKAGES_USER_CLI='htop netcat alsa-utils'
 # Setup
 #
 setup() {
-    local boot_dev="/dev/$DRIVE"1
-    local arch_dev="/dev/$DRIVE"2
 
     partition_drive
 
@@ -104,8 +102,6 @@ setup() {
 # Configure
 #
 configure() {
-    local boot_dev="/dev/$DRIVE"1
-    local arch_dev="/dev/$DRIVE"2
 
     detect_cpu
 
@@ -607,6 +603,9 @@ password_prompt() {
 #
 # Main
 #
+boot_dev="/dev/${DRIVE}1"
+arch_dev="/dev/${DRIVE}2"
+
 if [ "$1" == "chroot" ]
 then
     configure
