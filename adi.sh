@@ -43,17 +43,21 @@ KEYMAP='us'
 # Video driver: i915/nvidia/nouveau/radeon/vesa or blank
 VIDEO_DRIVER=''
 
-# Packages (comment to disable)
+# Packages CLI (comment to disable)
 PACKAGES_BASE='net-tools ntp openssh sudo wget vim bash-completion'
 PACKAGES_FONTS='terminus-font ttf-hack ttf-anonymous-pro ttf-dejavu ttf-freefont ttf-liberation'
+PACKAGES_USER_CLI='htop netcat alsa-utils'
+
+# Packages GUI
 #PACKAGES_X='xorg-server xorg-apps xorg-xinit xterm'
 
 # KDE full
 #PACKAGES_WM='plasma-meta kde-applications-meta kde-gtk-config'
 # KDE base
 #PACKAGES_WM='plasma-desktop plasma-nm plasma-pa kde-gtk-config sddm-kcm kdebase-meta kdegraphics-meta kdenetwork-meta kdeutils-meta'
+# Xfce
+#PACKAGES_WM='xfce4 xfce4-goodies'
 
-PACKAGES_USER_CLI='htop netcat alsa-utils'
 #PACKAGES_USER_GUI='terminator chromium'
 
 
