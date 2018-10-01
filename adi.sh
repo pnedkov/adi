@@ -390,13 +390,6 @@ set_initcpio() {
 
     headline "Configuring initial ramdisk"
 
-    if [ -n "$ENC_DEV_NAME" ]
-    then
-        MY_HOOKS="base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck"
-    else
-        MY_HOOKS="base udev autodetect keyboard keymap consolefont modconf block lvm2 filesystems fsck"
-    fi
-
     # Set MODULES in /etc/mkinitcpio.conf
     sed -i -e "s/^MODULES=.*/MODULES=\"$FS\"/" /etc/mkinitcpio.conf
     if [[ "$VIDEO_DRIVER" =~ ^(amdgpu|nvidia|nouveau|qlx)$ ]]
@@ -408,6 +401,13 @@ set_initcpio() {
     if [ "$VIDEO_DRIVER" == "nvidia" ]
     then
         sed -i -e "s/^FILES=.*/FILES=\"/etc/modprobe.d/nvidia.conf\"/" /etc/modprobe.d/nvidia.conf
+    fi
+
+    if [ -n "$ENC_DEV_NAME" ]
+    then
+        MY_HOOKS="base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck"
+    else
+        MY_HOOKS="base udev autodetect keyboard keymap consolefont modconf block lvm2 filesystems fsck"
     fi
 
     # Set HOOKS in /etc/mkinitcpio.conf
