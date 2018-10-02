@@ -606,6 +606,13 @@ password_prompt() {
 boot_dev="/dev/${DRIVE}1"
 arch_dev="/dev/${DRIVE}2"
 
+# source adi.conf if exists
+conf="$(dirname $(readlink -f "$0"))/adi.conf"
+if [ -f "$conf" ]
+then
+    source "$conf"
+fi
+
 if [ "$1" == "chroot" ]
 then
     configure
