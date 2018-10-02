@@ -16,11 +16,11 @@ SWAP_SIZE='2G'
 # Size of root LV (leave blank for 100%FREE and no separate /home LV)
 ROOT_SIZE='16G'
 
-# Encryption device - encrypts everything except /boot (leave blank to disable)
+# Encrypted device (leave blank to disable LUKS encryption)
 ENC_DEV_NAME='cryptlvm'
 
-# Passphrase used to encrypt the drive (leave blank to be prompted)
-ENC_DEV_PASSPHRASE='apasswd'
+# LUKS passphrase (leave blank to be prompted)
+LUKS_PASSPHRASE='apasswd'
 
 # Hostname
 HOSTNAME='archy'
@@ -65,6 +65,8 @@ PACKAGES_USER_CLI='htop netcat alsa-utils'
 # Setup
 #
 setup() {
+
+    set_passwords
 
     partition_drive
 
@@ -138,6 +140,31 @@ configure() {
     rm -f /setup.sh
 }
 
+###
+
+set_passwords() {
+
+    if [ -z "$LUKS_PASSPHRASE" ]
+    then
+        headline "LUKS passphrase"
+        password_prompt "Enter a passphrase to encrypt $arch_dev: "
+        LUKS_PASSPHRASE="$password"
+    fi
+
+    if [ -z "$ROOT_PASSWORD" ]
+    then
+        headline "Root password"
+        password_prompt "Enter the root password: "
+        ROOT_PASSWORD="$password"
+    fi
+
+    if [[ -n "$USER_NAME" && -z "$USER_PASSWORD" ]]
+    then
+        headline "User password"
+        password_prompt "Enter the password for user $USER_NAME: "
+        USER_PASSWORD="$password"
+    fi
+}
 
 partition_drive() {
 
@@ -151,20 +178,12 @@ partition_drive() {
         set 2 lvm on
 }
 
-###
-
 encrypt_drive() {
 
     headline "Encrypting partition"
 
-    if [ -z "$ENC_DEV_PASSPHRASE" ]
-    then
-        password_prompt "Enter a passphrase to encrypt $arch_dev: "
-        ENC_DEV_PASSPHRASE="$password"
-    fi
-
-    echo -en "$ENC_DEV_PASSPHRASE" | cryptsetup luksFormat "$arch_dev"
-    echo -en "$ENC_DEV_PASSPHRASE" | cryptsetup luksOpen "$arch_dev" "$ENC_DEV_NAME"
+    echo -en "$LUKS_PASSPHRASE" | cryptsetup luksFormat "$arch_dev"
+    echo -en "$LUKS_PASSPHRASE" | cryptsetup luksOpen "$arch_dev" "$ENC_DEV_NAME"
 }
 
 setup_lvm() {
@@ -490,12 +509,6 @@ set_root_password() {
 
     headline "Setting root password"
 
-    if [ -z "$ROOT_PASSWORD" ]
-    then
-        password_prompt "Enter the root password: "
-        ROOT_PASSWORD="$password"
-    fi
-
     echo -en "$ROOT_PASSWORD\n$ROOT_PASSWORD" | passwd
 }
 
@@ -504,12 +517,6 @@ create_user() {
     if [ -n "$USER_NAME" ]
     then
         headline "Creating user $USER_NAME"
-
-        if [ -z "$USER_PASSWORD" ]
-        then
-            password_prompt "Enter the password for user $USER_NAME: "
-            USER_PASSWORD="$password"
-        fi
 
         useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$USER_NAME"
         echo -en "$USER_PASSWORD\n$USER_PASSWORD" | passwd "$USER_NAME"
