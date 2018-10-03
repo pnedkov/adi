@@ -509,7 +509,7 @@ set_root_password() {
 
     headline "Setting root password"
 
-    echo -en "$ROOT_PASSWORD\n$ROOT_PASSWORD" | passwd
+    echo "root:$ROOT_PASSWORD" | chpasswd
 }
 
 create_user() {
@@ -519,7 +519,7 @@ create_user() {
         headline "Creating user $USER_NAME"
 
         useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$USER_NAME"
-        echo -en "$USER_PASSWORD\n$USER_PASSWORD" | passwd "$USER_NAME"
+        echo "$USER_NAME:$USER_PASSWORD" | chpasswd
     fi
 }
 
