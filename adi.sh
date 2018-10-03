@@ -256,7 +256,7 @@ arch_chroot() {
     headline "Chrooting..."
 
     cp $0 /mnt/setup.sh
-    arch-chroot /mnt ./setup.sh chroot
+    arch-chroot /mnt /bin/bash -c "export ROOT_PASSWD=$ROOT_PASSWORD USER_PASSWD=$USER_PASSWORD; ./setup.sh chroot"
 }
 
 unmount_filesystems() {
@@ -509,7 +509,7 @@ set_root_password() {
 
     headline "Setting root password"
 
-    echo "root:$ROOT_PASSWORD" | chpasswd
+    echo "root:$ROOT_PASSWD" | chpasswd
 }
 
 create_user() {
@@ -519,7 +519,7 @@ create_user() {
         headline "Creating user $USER_NAME"
 
         useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$USER_NAME"
-        echo "$USER_NAME:$USER_PASSWORD" | chpasswd
+        echo "$USER_NAME:$USER_PASSWD" | chpasswd
     fi
 }
 
