@@ -548,6 +548,11 @@ MaximumUid=65000
 MinimumUid=1000
 EOF
     fi
+
+    sed -i -e "s/^#Color/Color/" /etc/pacman.conf
+    sed -i -e "s/^#TotalDownload/TotalDownload/" /etc/pacman.conf
+    sed -i -e "s/^#VerbosePkgList/VerbosePkgList/" /etc/pacman.conf
+    sed -i -e "/^VerbosePkgList/aILoveCandy" /etc/pacman.conf
 }
 
 ###
