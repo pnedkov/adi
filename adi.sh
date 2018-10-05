@@ -256,6 +256,10 @@ arch_chroot() {
     headline "Chrooting..."
 
     cp $0 /mnt/setup.sh
+    if [ -f "$conf" ]
+    then
+        cp "$conf" "/mnt/$(basename $conf)"
+    fi
     arch-chroot /mnt /bin/bash -c "export ROOT_PASSWD=$ROOT_PASSWORD USER_PASSWD=$USER_PASSWORD; ./setup.sh chroot"
 }
 
