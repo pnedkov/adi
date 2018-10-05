@@ -43,6 +43,9 @@ KEYMAP='us'
 # Video driver: amdgpu/ati/dummy/fbdev/intel/nouveau/nvidia/vesa/vmware/voodoo/qxl or blank
 VIDEO_DRIVER=''
 
+# The fastest mirror near you
+MIRROR="http://mirrors.kernel.org/archlinux/$repo/os/$arch"
+
 # Packages CLI (comment to disable)
 PACKAGES_BASE='net-tools ntp openssh sudo wget vim bash-completion'
 PACKAGES_FONTS='terminus-font ttf-hack ttf-anonymous-pro ttf-dejavu ttf-freefont ttf-liberation'
@@ -244,7 +247,7 @@ install_base() {
 
     headline "Installing base system"
 
-    echo 'Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch' > /etc/pacman.d/mirrorlist
+    echo "Server = $MIRROR" > /etc/pacman.d/mirrorlist
 
     pacstrap /mnt base base-devel
     genfstab /mnt >> /mnt/etc/fstab
