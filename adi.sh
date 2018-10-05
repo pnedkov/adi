@@ -7,6 +7,12 @@ DRIVE='sda'
 # File system for / and /home: xfs/ext4
 FS='xfs'
 
+# Encrypted device (leave blank to disable LUKS encryption)
+LUKS_DEV_NAME='cryptlvm'
+
+# LUKS passphrase (leave blank to be prompted)
+LUKS_PASSPHRASE='apasswd'
+
 # LVM group name
 LVM_GROUP='archvg'
 
@@ -15,12 +21,6 @@ SWAP_SIZE='2G'
 
 # Size of root LV (leave blank for 100%FREE and no separate /home LV)
 ROOT_SIZE='16G'
-
-# Encrypted device (leave blank to disable LUKS encryption)
-ENC_DEV_NAME='cryptlvm'
-
-# LUKS passphrase (leave blank to be prompted)
-LUKS_PASSPHRASE='apasswd'
 
 # Hostname
 HOSTNAME='archy'
@@ -73,9 +73,9 @@ setup() {
 
     partition_drive
 
-    if [ -n "$ENC_DEV_NAME" ]
+    if [ -n "$LUKS_DEV_NAME" ]
     then
-        local lvm_pv="/dev/mapper/$ENC_DEV_NAME"
+        local lvm_pv="/dev/mapper/$LUKS_DEV_NAME"
         encrypt_drive
     else
         local lvm_pv="$arch_dev"
@@ -186,7 +186,7 @@ encrypt_drive() {
     headline "Encrypting partition"
 
     echo -en "$LUKS_PASSPHRASE" | cryptsetup luksFormat "$arch_dev"
-    echo -en "$LUKS_PASSPHRASE" | cryptsetup luksOpen "$arch_dev" "$ENC_DEV_NAME"
+    echo -en "$LUKS_PASSPHRASE" | cryptsetup luksOpen "$arch_dev" "$LUKS_DEV_NAME"
 }
 
 setup_lvm() {
@@ -273,9 +273,9 @@ unmount_filesystems() {
     umount -R /mnt
     swapoff /dev/$LVM_GROUP/swap
     vgchange -an
-    if [ -n "$ENC_DEV_NAME" ]
+    if [ -n "$LUKS_DEV_NAME" ]
     then
-        cryptsetup luksClose /dev/mapper/$ENC_DEV_NAME
+        cryptsetup luksClose /dev/mapper/$LUKS_DEV_NAME
     fi
 }
 
@@ -425,7 +425,7 @@ set_initcpio() {
         sed -i -e "s/^FILES=.*/FILES=\"/etc/modprobe.d/nvidia.conf\"/" /etc/modprobe.d/nvidia.conf
     fi
 
-    if [ -n "$ENC_DEV_NAME" ]
+    if [ -n "$LUKS_DEV_NAME" ]
     then
         MY_HOOKS="base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck"
     else
@@ -463,9 +463,9 @@ EOF
         sed -i -e "/initrd \/initramfs-linux.img/i initrd /$CPU-ucode.img" /boot/loader/entries/arch.conf
     fi
 
-    if [ -n "$ENC_DEV_NAME" ]
+    if [ -n "$LUKS_DEV_NAME" ]
     then
-        echo "options cryptdevice=UUID=$arch_dev_uuid:$ENC_DEV_NAME root=/dev/$LVM_GROUP/root quiet rw" >> /boot/loader/entries/arch.conf
+        echo "options cryptdevice=UUID=$arch_dev_uuid:$LUKS_DEV_NAME root=/dev/$LVM_GROUP/root quiet rw" >> /boot/loader/entries/arch.conf
     else
         echo "options root=/dev/$LVM_GROUP/root quiet rw" >> /boot/loader/entries/arch.conf
     fi
@@ -570,9 +570,9 @@ clean() {
     swapoff /dev/$LVM_GROUP/swap
     vgchange -an
     vgremove -y $LVM_GROUP
-    if [ -n "$ENC_DEV_NAME" ]
+    if [ -n "$LUKS_DEV_NAME" ]
     then
-        cryptsetup luksClose /dev/mapper/$ENC_DEV_NAME
+        cryptsetup luksClose /dev/mapper/$LUKS_DEV_NAME
     fi
 
     parted -s "/dev/$DRIVE" \
