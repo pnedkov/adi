@@ -625,8 +625,13 @@ password_prompt() {
 self="$(readlink -f $0)"
 conf="$(dirname $self)/$(basename $self .sh).conf"
 
-boot_dev="/dev/${DRIVE}1"
-arch_dev="/dev/${DRIVE}2"
+if [[ "$DRIVE" =~ ^(md|nvme) ]]
+then
+    part_prefix="p"
+fi
+
+boot_dev="/dev/${DRIVE}${part_prefix}1"
+arch_dev="/dev/${DRIVE}${part_prefix}2"
 
 # source the default conf file if exists
 if [ -f "$conf" ]
