@@ -255,12 +255,12 @@ arch_chroot() {
 
     headline "Chrooting..."
 
-    cp $0 /mnt/setup.sh
+    cp "$self" "/mnt/$(basename $self)"
     if [ -f "$conf" ]
     then
         cp "$conf" "/mnt/$(basename $conf)"
     fi
-    arch-chroot /mnt /bin/bash -c "export ROOT_PASSWD=$ROOT_PASSWORD USER_PASSWD=$USER_PASSWORD; ./setup.sh chroot"
+    arch-chroot /mnt /bin/bash -c "export ROOT_PASSWD=$ROOT_PASSWORD USER_PASSWD=$USER_PASSWORD; /$(basename $self) chroot"
 }
 
 unmount_filesystems() {
@@ -619,11 +619,13 @@ password_prompt() {
 #
 # Main
 #
+self="$(readlink -f $0)"
+conf="$(dirname $self)/$(basename $self .sh).conf"
+
 boot_dev="/dev/${DRIVE}1"
 arch_dev="/dev/${DRIVE}2"
 
-# source adi.conf if exists
-conf="$(dirname $(readlink -f "$0"))/adi.conf"
+# source the default conf file if exists
 if [ -f "$conf" ]
 then
     source "$conf"
