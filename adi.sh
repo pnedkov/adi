@@ -600,7 +600,7 @@ password_prompt() {
         stty echo
         echo
 
-        echo -n "Password again: "
+        echo -n "Confirm password: "
         stty -echo
         read password2
         stty echo
