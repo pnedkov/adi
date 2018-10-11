@@ -8,7 +8,7 @@ DRIVE='sda'
 FS='xfs'
 
 # Encrypted device (leave blank to disable LUKS encryption)
-LUKS_DEV_NAME='cryptlvm'
+LUKS_DEV_NAME='crypt'
 
 # LUKS passphrase (leave blank to be prompted)
 LUKS_PASSPHRASE='apasswd'
