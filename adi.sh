@@ -136,9 +136,9 @@ configure() {
 
     set_root_password
 
-    create_user
-
     set_userland
+
+    create_user
 
     rm -f /setup.sh
 }
@@ -519,17 +519,6 @@ set_root_password() {
     echo "root:$ROOT_PASSWD" | chpasswd
 }
 
-create_user() {
-
-    if [ -n "$USER_NAME" ]
-    then
-        headline "Creating user $USER_NAME"
-
-        useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$USER_NAME"
-        echo "$USER_NAME:$USER_PASSWD" | chpasswd
-    fi
-}
-
 set_userland() {
 
     headline "Configuring userland"
@@ -560,6 +549,24 @@ EOF
     sed -i -e "s/^#TotalDownload/TotalDownload/" /etc/pacman.conf
     sed -i -e "s/^#VerbosePkgList/VerbosePkgList/" /etc/pacman.conf
     sed -i -e "/^VerbosePkgList/aILoveCandy" /etc/pacman.conf
+
+    sed -i -e "/^PS1=.*/d" /etc/skel/.bashrc
+    echo -e "alias grep='grep --color=auto'\n" >> /etc/skel/.bashrc
+    cp -f /etc/skel/.bashrc /root/
+    cp -f /etc/skel/.bash_profile /root/
+    echo 'export PS1="\[\033[38;5;12m\][\[$(tput sgr0)\]\[\033[38;5;9m\]\u\[$(tput sgr0)\]\[\033[38;5;12m\]@\[$(tput sgr0)\]\[\033[38;5;7m\]\h\[$(tput sgr0)\]\[\033[38;5;12m\]]\[$(tput sgr0)\]\[\033[38;5;15m\]: \[$(tput sgr0)\]\[\033[38;5;7m\]\w\[$(tput sgr0)\]\[\033[38;5;12m\]>\[$(tput sgr0)\]\[\033[38;5;9m\]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"' >> /root/.bashrc
+    echo 'export PS1="\[\033[38;5;12m\][\[$(tput sgr0)\]\[\033[38;5;10m\]\u\[$(tput sgr0)\]\[\033[38;5;12m\]@\[$(tput sgr0)\]\[\033[38;5;7m\]\h\[$(tput sgr0)\]\[\033[38;5;12m\]]\[$(tput sgr0)\]\[\033[38;5;15m\]: \[$(tput sgr0)\]\[\033[38;5;7m\]\w\[$(tput sgr0)\]\[\033[38;5;12m\]>\[$(tput sgr0)\]\[\033[38;5;10m\]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"' >> /etc/skel/.bashrc
+}
+
+create_user() {
+
+    if [ -n "$USER_NAME" ]
+    then
+        headline "Creating user $USER_NAME"
+
+        useradd -m -s /bin/bash -G wheel,network,video,audio,optical,floppy,storage,scanner,power "$USER_NAME"
+        echo "$USER_NAME:$USER_PASSWD" | chpasswd
+    fi
 }
 
 ###
