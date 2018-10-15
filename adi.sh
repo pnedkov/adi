@@ -185,7 +185,7 @@ encrypt_drive() {
 
     headline "Encrypting partition"
 
-    echo -en "$LUKS_PASSPHRASE" | cryptsetup luksFormat "$arch_dev"
+    echo -en "$LUKS_PASSPHRASE" | cryptsetup --type luks2 --key-size 512 --hash sha512 luksFormat "$arch_dev"
     echo -en "$LUKS_PASSPHRASE" | cryptsetup luksOpen "$arch_dev" "$LUKS_DEV_NAME"
 }
 
