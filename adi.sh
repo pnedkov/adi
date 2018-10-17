@@ -44,7 +44,7 @@ KEYMAP='us'
 VIDEO_DRIVER=''
 
 # The fastest mirror near you
-MIRROR='http://mirrors.kernel.org/archlinux/$repo/os/$arch'
+MIRROR='http://mirror.lty.me/archlinux/$repo/os/$arch'
 
 # Packages CLI (comment to disable)
 PACKAGES_BASE='net-tools ntp openssh sudo wget vim bash-completion'
