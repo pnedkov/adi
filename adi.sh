@@ -413,16 +413,16 @@ set_initcpio() {
     headline "Configuring initial ramdisk"
 
     # Set MODULES in /etc/mkinitcpio.conf
-    sed -i -e "s/^MODULES=.*/MODULES=\"$FS\"/" /etc/mkinitcpio.conf
+    sed -i -e "s/^MODULES=.*/MODULES=($FS)/" /etc/mkinitcpio.conf
     if [[ "$VIDEO_DRIVER" =~ ^(amdgpu|nvidia|nouveau|qlx)$ ]]
     then
-        sed -e "s/^MODULES=\"\(.*\)\"/MODULES=\"\1 $VIDEO_DRIVER\"/" /etc/mkinitcpio.conf
+        sed -i -e "s/^MODULES=(\(.*\))/MODULES=(\1 $VIDEO_DRIVER)/" /etc/mkinitcpio.conf
     fi
 
     # Set FILES in /etc/mkinitcpio.conf
     if [ "$VIDEO_DRIVER" == "nvidia" ]
     then
-        sed -i -e "s/^FILES=.*/FILES=\"/etc/modprobe.d/nvidia.conf\"/" /etc/modprobe.d/nvidia.conf
+        sed -i -e "s#^FILES=.*#FILES=(/etc/modprobe.d/nvidia.conf)#" /etc/mkinitcpio.conf
     fi
 
     if [ -n "$LUKS_DEV_NAME" ]
