@@ -14,7 +14,7 @@ LUKS_DEV_NAME='crypt'
 LUKS_PASSPHRASE='apasswd'
 
 # LVM group name
-LVM_GROUP='archvg'
+LVM_GROUP='arch'
 
 # Size of swap LV
 SWAP_SIZE='2G'
