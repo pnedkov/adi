@@ -11,7 +11,7 @@ FS='xfs'
 LUKS_DEV_NAME='crypt'
 
 # LUKS passphrase (leave blank to be prompted)
-LUKS_PASSPHRASE='apasswd'
+LUKS_PASSPHRASE=''
 
 # LVM group name
 LVM_GROUP='arch'
@@ -26,13 +26,13 @@ ROOT_SIZE='16G'
 HOSTNAME='archy'
 
 # Root password (leave blank to be prompted)
-ROOT_PASSWORD='bpasswd'
+ROOT_PASSWORD=''
 
 # Main user member of wheel group (leave blank to disable user creation)
 USER_NAME='plamen'
 
 # The main user's password (leave blank to be prompted)
-USER_PASSWORD='cpasswd'
+USER_PASSWORD=''
 
 # System timezone
 TIMEZONE='America/Los_Angeles'
