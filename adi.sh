@@ -152,7 +152,7 @@ configure() {
 
 set_passwords() {
 
-    if [ -z "$LUKS_PASSPHRASE" ]
+    if [[ -n "$LUKS_DEV_NAME" && -z "$LUKS_PASSPHRASE" ]]
     then
         headline "LUKS passphrase"
         password_prompt "Enter a passphrase to encrypt $arch_dev: "
