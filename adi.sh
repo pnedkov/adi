@@ -73,7 +73,7 @@ setup() {
 
     partition_drive
 
-    if [ -n "$LUKS_DEV_NAME" ]
+    if [[ -n "$LUKS_DEV_NAME" && -n "$uefi" ]]
     then
         local lvm_pv="/dev/mapper/$LUKS_DEV_NAME"
         encrypt_drive
@@ -126,7 +126,12 @@ configure() {
 
     set_initcpio
 
-    set_bootctl
+    if [ -n "$uefi" ]
+    then
+        set_bootctl
+    else
+        set_grub
+    fi
 
     set_wired_network
 
@@ -176,9 +181,17 @@ partition_drive() {
     parted -s "/dev/$DRIVE" \
         mklabel gpt \
         mkpart primary 0% 512M \
-        set 1 esp on \
         mkpart primary 512M 100% \
         set 2 lvm on
+
+    if [ -n "$uefi" ]
+    then
+        parted -s "/dev/$DRIVE" \
+            set 1 esp on
+    else
+        parted -s "/dev/$DRIVE" \
+            set 1 boot on
+    fi
 }
 
 encrypt_drive() {
@@ -213,7 +226,12 @@ format_filesystems() {
 
     headline "Formatting filesystems"
 
-    mkfs.vfat -F32 $boot_dev
+    if [ -n "$uefi" ]
+    then
+        mkfs.vfat -F32 $boot_dev
+    else
+        mkfs.$FS $boot_dev
+    fi
 
     mkfs.$FS /dev/$LVM_GROUP/root
 
@@ -471,6 +489,15 @@ EOF
     fi
 }
 
+set_grub() {
+
+    headline "Configuring GRUB"
+
+    grub-install /dev/${DRIVE}
+
+    grub-mkconfig -o /boot/grub/grub.cfg
+}
+
 set_wired_network(){
 
     headline "Configuring netowrk"
@@ -645,6 +672,8 @@ if [ -f "$conf" ]
 then
     source "$conf"
 fi
+
+test -d /sys/firmware/efi && uefi=1
 
 if [ "$1" == "chroot" ]
 then
