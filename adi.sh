@@ -520,6 +520,7 @@ set_grub() {
     fi
 
     sed -i -e "s#^GRUB_CMDLINE_LINUX=.*#GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=$arch_dev_uuid:$LUKS_DEV_NAME root=/dev/$LVM_GROUP/root\"#" /etc/default/grub
+    sed -i -e "s/#GRUB_ENABLE_CRYPTODISK=y/GRUB_ENABLE_CRYPTODISK=y/" /etc/default/grub
 
     grub-install /dev/${DRIVE}
 
