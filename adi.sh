@@ -73,7 +73,7 @@ setup() {
 
     partition_drive
 
-    if [[ -n "$LUKS_DEV_NAME" && -n "$uefi" ]]
+    if [ -n "$LUKS_DEV_NAME" ]
     then
         local lvm_pv="/dev/mapper/$LUKS_DEV_NAME"
         encrypt_drive
@@ -206,7 +206,15 @@ encrypt_drive() {
 
     headline "Encrypting partition"
 
-    echo -en "$LUKS_PASSPHRASE" | cryptsetup --type luks2 --key-size 512 --hash sha512 luksFormat "$arch_dev"
+    # GRUB does not support LUKS1
+    if [ -n "$uefi" ]
+    then
+        luks_ver="luks2"
+    else
+        luks_ver="luks1"
+    fi
+
+    echo -en "$LUKS_PASSPHRASE" | cryptsetup --type $luks_ver --key-size 512 --hash sha512 luksFormat "$arch_dev"
     echo -en "$LUKS_PASSPHRASE" | cryptsetup luksOpen "$arch_dev" "$LUKS_DEV_NAME"
 }
 
@@ -505,6 +513,13 @@ EOF
 set_grub() {
 
     headline "Configuring GRUB"
+
+    if [ "$VIDEO_DRIVER" == "nvidia" ]
+    then
+        sed -i -e "s#^GRUB_CMDLINE_LINUX_DEFAULT=.*#GRUB_CMDLINE_LINUX_DEFAULT=\"nvidia-drm.modeset=1\"#" /etc/default/grub
+    fi
+
+    sed -i -e "s#^GRUB_CMDLINE_LINUX=.*#GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=$arch_dev_uuid:$LUKS_DEV_NAME root=/dev/$LVM_GROUP/root\"#" /etc/default/grub
 
     grub-install /dev/${DRIVE}
 
