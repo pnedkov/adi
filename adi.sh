@@ -178,8 +178,16 @@ partition_drive() {
 
     headline "Creating partitions"
 
+    if [ -n "$uefi" ]
+    then
+        parted -s "/dev/$DRIVE" \
+            mklabel gpt
+    else
+        parted -s "/dev/$DRIVE" \
+            mklabel msdos
+    fi
+
     parted -s "/dev/$DRIVE" \
-        mklabel gpt \
         mkpart primary 0% 512M \
         mkpart primary 512M 100% \
         set 2 lvm on
