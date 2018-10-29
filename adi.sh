@@ -375,6 +375,11 @@ EOF
         fi
     fi
 
+    if [ -z "$uefi" ]
+    then
+        packages+=" grub"
+    fi
+
     pacman -Sy --noconfirm $packages
 }
 
