@@ -69,6 +69,8 @@ PACKAGES_USER_CLI='htop netcat alsa-utils'
 #
 setup() {
 
+    check_drive
+
     set_passwords
 
     partition_drive
@@ -149,6 +151,24 @@ configure() {
 }
 
 ###
+
+check_drive() {
+
+    if ! [ -e /dev/$DRIVE ]
+    then
+        echo -e "\nERROR: /dev/$DRIVE does not exist!\n"
+        exit 1
+    fi
+
+    local partitions=$(partprobe -d -s /dev/$DRIVE | tail -c 2)
+    if [[ "$partitions" =~ ^[0-9]+$ ]]
+    then
+        echo -e "\nERROR: /dev/$DRIVE contains $partitions partition(s)"
+        echo -e "Backup your data, delete all partitions on /dev/$DRIVE and rerun the script\n"
+        exit 1
+    fi
+
+}
 
 set_passwords() {
 
