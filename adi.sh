@@ -16,7 +16,7 @@ LUKS_PASSPHRASE=''
 # LVM group name
 LVM_GROUP='arch'
 
-# Size of swap LV
+# Size of swap LV (leave blank to disable)
 SWAP_SIZE='2G'
 
 # Size of root LV (leave blank for 100%FREE and no separate /home LV)
@@ -245,7 +245,10 @@ setup_lvm() {
     pvcreate -y "$lvm_pv"
     vgcreate -y "$LVM_GROUP" "$lvm_pv"
 
-    lvcreate -y -L $SWAP_SIZE "$LVM_GROUP" -n swap
+    if [ -n "$SWAP_SIZE" ]
+    then
+        lvcreate -y -L $SWAP_SIZE "$LVM_GROUP" -n swap
+    fi
 
     if [ -n "$ROOT_SIZE" ]
     then
@@ -276,7 +279,10 @@ format_filesystems() {
         mkfs.$FS /dev/$LVM_GROUP/home
     fi
 
-    mkswap /dev/$LVM_GROUP/swap
+    if [ -n "$SWAP_SIZE" ]
+    then
+        mkswap /dev/$LVM_GROUP/swap
+    fi
 }
 
 mount_filesystems() {
@@ -294,7 +300,10 @@ mount_filesystems() {
         mount /dev/$LVM_GROUP/home /mnt/home
     fi
 
-    swapon /dev/$LVM_GROUP/swap
+    if [ -n "$SWAP_SIZE" ]
+    then
+        swapon /dev/$LVM_GROUP/swap
+    fi
 }
 
 install_base() {
@@ -325,7 +334,10 @@ unmount_filesystems() {
     headline "Unmounting filesystems"
 
     umount -R /mnt
-    swapoff /dev/$LVM_GROUP/swap
+    if [ -n "$SWAP_SIZE" ]
+    then
+        swapoff /dev/$LVM_GROUP/swap
+    fi
     vgchange -an
     if [ -n "$LUKS_DEV_NAME" ]
     then
@@ -650,7 +662,10 @@ create_user() {
 clean() {
 
     umount -R /mnt
-    swapoff /dev/$LVM_GROUP/swap
+    if [ -n "$SWAP_SIZE" ]
+    then
+        swapoff /dev/$LVM_GROUP/swap
+    fi
     vgchange -an
     vgremove -y $LVM_GROUP
     if [ -n "$LUKS_DEV_NAME" ]
