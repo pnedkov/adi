@@ -460,6 +460,13 @@ set_timezone() {
     headline "Setting timezone"
 
     ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
+
+    if [ -n "$uefi" ]
+    then
+        timedatectl set-local-rtc 0
+    else
+        hwclock --systohc
+    fi
 }
 
 set_locale() {
