@@ -450,9 +450,21 @@ set_hosts() {
     headline "Setting hosts file"
 
     cat > /etc/hosts <<EOF
-127.0.0.1 localhost.localdomain localhost $HOSTNAME
-::1       localhost.localdomain localhost $HOSTNAME
+127.0.0.1 localhost.localdomain localhost
+::1       localhost.localdomain localhost
+
 EOF
+
+    local ip=$(ip r | grep "default via" | cut -d " " -f 3)
+    local domain=$(grep -E "^domain " /etc/resolv.conf | cut -d " " -f 2)
+    test -z "$domain" && domain=$(grep -E "^search " /etc/resolv.conf | cut -d " " -f 2)
+
+    if [[ -n "$domain" ]]
+    then
+        echo "$ip $HOSTNAME.$domain $HOSTNAME" >> /etc/hosts
+    else
+        echo "$ip $HOSTNAME" >> /etc/hosts
+    fi
 }
 
 set_timezone() {
