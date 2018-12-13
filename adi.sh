@@ -326,6 +326,14 @@ arch_chroot() {
     then
         cp "$conf" "/mnt/$(basename $conf)"
     fi
+
+    # LVM workaround before chroot
+    if [ -z "$uefi" ]
+    then
+        mkdir /mnt/hostlvm
+        mount --bind /run/lvm /mnt/hostlvm
+    fi
+
     arch-chroot /mnt /bin/bash -c "export ROOT_PASSWD=$ROOT_PASSWORD USER_PASSWD=$USER_PASSWORD; /$(basename $self) chroot"
 }
 
@@ -575,6 +583,9 @@ set_grub() {
         sed -i -e "s#^GRUB_CMDLINE_LINUX=.*#GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=$arch_dev_uuid:$LUKS_DEV_NAME root=/dev/$LVM_GROUP/root\"#" /etc/default/grub
         sed -i -e "s/#GRUB_ENABLE_CRYPTODISK=y/GRUB_ENABLE_CRYPTODISK=y/" /etc/default/grub
     fi
+
+    # LVM workaround
+    ln -sf /hostlvm /run/lvm
 
     grub-install /dev/${DRIVE}
 
