@@ -481,12 +481,7 @@ set_timezone() {
 
     ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
 
-    if [ -n "$uefi" ]
-    then
-        timedatectl set-local-rtc 0
-    else
-        hwclock --systohc
-    fi
+    hwclock --systohc
 }
 
 set_locale() {
