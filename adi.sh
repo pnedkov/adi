@@ -77,10 +77,7 @@ setup() {
 
     if [ -n "$LUKS_DEV_NAME" ]
     then
-        local lvm_pv="/dev/mapper/$LUKS_DEV_NAME"
         encrypt_drive
-    else
-        local lvm_pv="$arch_dev"
     fi
 
     setup_lvm
@@ -154,17 +151,17 @@ configure() {
 
 check_drive() {
 
-    if ! [ -e /dev/$DRIVE ]
+    if ! [ -e $dev ]
     then
-        echo -e "\nERROR: /dev/$DRIVE does not exist!\n"
+        echo -e "\nERROR: $dev does not exist!\n"
         exit 1
     fi
 
-    local partitions=$(partprobe -d -s /dev/$DRIVE | tail -c 2)
+    local partitions=$(partprobe -d -s $dev | tail -c 2)
     if [[ "$partitions" =~ ^[0-9]+$ ]]
     then
-        echo -e "\nERROR: /dev/$DRIVE contains $partitions partition(s)"
-        echo -e "Backup your data, delete all partitions on /dev/$DRIVE and rerun the script\n"
+        echo -e "\nERROR: $dev contains $partitions partition(s)"
+        echo -e "Backup your data, delete all partitions on $dev and rerun the script\n"
         exit 1
     fi
 
@@ -200,24 +197,24 @@ partition_drive() {
 
     if [ -n "$uefi" ]
     then
-        parted -s "/dev/$DRIVE" \
+        parted -s "$dev" \
             mklabel gpt
     else
-        parted -s "/dev/$DRIVE" \
+        parted -s "$dev" \
             mklabel msdos
     fi
 
-    parted -s "/dev/$DRIVE" \
+    parted -s "$dev" \
         mkpart primary 0% 512M \
         mkpart primary 512M 100% \
         set 2 lvm on
 
     if [ -n "$uefi" ]
     then
-        parted -s "/dev/$DRIVE" \
+        parted -s "$dev" \
             set 1 esp on
     else
-        parted -s "/dev/$DRIVE" \
+        parted -s "$dev" \
             set 1 boot on
     fi
 }
@@ -272,16 +269,16 @@ format_filesystems() {
         mkfs.$FS $boot_dev
     fi
 
-    mkfs.$FS /dev/$LVM_GROUP/root
+    mkfs.$FS $root_dev
 
-    if [ -e /dev/$LVM_GROUP/home ]
+    if [ -e "$home_dev" ]
     then
-        mkfs.$FS /dev/$LVM_GROUP/home
+        mkfs.$FS $home_dev
     fi
 
     if [ -n "$SWAP_SIZE" ]
     then
-        mkswap /dev/$LVM_GROUP/swap
+        mkswap $swap_dev
     fi
 }
 
@@ -289,20 +286,20 @@ mount_filesystems() {
 
     headline "Mounting filesystems"
 
-    mount /dev/$LVM_GROUP/root /mnt
+    mount $root_dev /mnt
 
     mkdir /mnt/boot
-    mount "$boot_dev" /mnt/boot
+    mount $boot_dev /mnt/boot
 
-    if [ -e /dev/$LVM_GROUP/home ]
+    if [ -e "$home_dev" ]
     then
         mkdir /mnt/home
-        mount /dev/$LVM_GROUP/home /mnt/home
+        mount $home_dev /mnt/home
     fi
 
     if [ -n "$SWAP_SIZE" ]
     then
-        swapon /dev/$LVM_GROUP/swap
+        swapon $swap_dev
     fi
 }
 
@@ -344,12 +341,12 @@ unmount_filesystems() {
     umount -R /mnt
     if [ -n "$SWAP_SIZE" ]
     then
-        swapoff /dev/$LVM_GROUP/swap
+        swapoff $swap_dev
     fi
     vgchange -an
     if [ -n "$LUKS_DEV_NAME" ]
     then
-        cryptsetup luksClose /dev/mapper/$LUKS_DEV_NAME
+        cryptsetup luksClose $luks_dev
     fi
 }
 
@@ -557,9 +554,9 @@ EOF
     if [ -n "$LUKS_DEV_NAME" ]
     then
         arch_dev_uuid=$(blkid $arch_dev | sed -n 's/.* UUID=\"\([^\"]*\)\".*/\1/p')
-        echo "options cryptdevice=UUID=$arch_dev_uuid:$LUKS_DEV_NAME root=/dev/$LVM_GROUP/root quiet rw" >> /boot/loader/entries/arch.conf
+        echo "options cryptdevice=UUID=$arch_dev_uuid:$LUKS_DEV_NAME root=$root_dev quiet rw" >> /boot/loader/entries/arch.conf
     else
-        echo "options root=/dev/$LVM_GROUP/root quiet rw" >> /boot/loader/entries/arch.conf
+        echo "options root=$root_dev quiet rw" >> /boot/loader/entries/arch.conf
     fi
 }
 
@@ -575,14 +572,14 @@ set_grub() {
     if [ -n "$LUKS_DEV_NAME" ]
     then
         arch_dev_uuid=$(blkid $arch_dev | sed -n 's/.* UUID=\"\([^\"]*\)\".*/\1/p')
-        sed -i -e "s#^GRUB_CMDLINE_LINUX=.*#GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=$arch_dev_uuid:$LUKS_DEV_NAME root=/dev/$LVM_GROUP/root\"#" /etc/default/grub
+        sed -i -e "s#^GRUB_CMDLINE_LINUX=.*#GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=$arch_dev_uuid:$LUKS_DEV_NAME root=$root_dev\"#" /etc/default/grub
         sed -i -e "s/#GRUB_ENABLE_CRYPTODISK=y/GRUB_ENABLE_CRYPTODISK=y/" /etc/default/grub
     fi
 
     # LVM workaround
     ln -sf /hostlvm /run/lvm
 
-    grub-install /dev/${DRIVE}
+    grub-install $dev
 
     grub-mkconfig -o /boot/grub/grub.cfg
 }
@@ -692,16 +689,16 @@ clean() {
     umount -R /mnt
     if [ -n "$SWAP_SIZE" ]
     then
-        swapoff /dev/$LVM_GROUP/swap
+        swapoff $swap_dev
     fi
     vgchange -an
     vgremove -y $LVM_GROUP
     if [ -n "$LUKS_DEV_NAME" ]
     then
-        cryptsetup luksClose /dev/mapper/$LUKS_DEV_NAME
+        cryptsetup luksClose $luks_dev
     fi
 
-    parted -s "/dev/$DRIVE" \
+    parted -s "$dev" \
         rm 2 \
         rm 1 \
         mklabel gpt
@@ -756,8 +753,20 @@ then
     part_prefix="p"
 fi
 
+# initialize all devices
+dev="/dev/$DRIVE"
 boot_dev="/dev/${DRIVE}${part_prefix}1"
 arch_dev="/dev/${DRIVE}${part_prefix}2"
+luks_dev="/dev/mapper/$LUKS_DEV_NAME"
+root_dev="/dev/$LVM_GROUP/root"
+swap_dev="/dev/$LVM_GROUP/swap"
+home_dev="/dev/$LVM_GROUP/home"
+lvm_pv="$arch_dev"
+
+if [ -n "$LUKS_DEV_NAME" ]
+then
+    lvm_pv="$luks_dev"
+fi
 
 # source the default conf file if exists
 if [ -f "$conf" ]
