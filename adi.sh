@@ -310,7 +310,7 @@ install_base() {
     echo "Server = $MIRROR" > /etc/pacman.d/mirrorlist
 
     pacstrap /mnt base base-devel
-    genfstab /mnt >> /mnt/etc/fstab
+    genfstab -U /mnt >> /mnt/etc/fstab
     cp -f /etc/resolv.conf /mnt/etc/resolv.conf
 }
 
