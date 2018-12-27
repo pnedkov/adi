@@ -660,8 +660,8 @@ EOF
 
     sed -i -e "s/^#Color/Color/" /etc/pacman.conf
     sed -i -e "s/^#TotalDownload/TotalDownload/" /etc/pacman.conf
-    sed -i -e "s/^#VerbosePkgList/VerbosePkgList/" /etc/pacman.conf
-    sed -i -e "/^VerbosePkgList/aILoveCandy" /etc/pacman.conf
+    sed -i -e "s/^#VerbosePkgLists/VerbosePkgLists/" /etc/pacman.conf
+    sed -i -e "/^VerbosePkgLists/aILoveCandy" /etc/pacman.conf
 
     sed -i -e "/^PS1=.*/d" /etc/skel/.bashrc
     echo -e "alias grep='grep --color=auto'\n" >> /etc/skel/.bashrc
