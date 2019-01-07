@@ -80,7 +80,10 @@ setup() {
         encrypt_drive
     fi
 
-    setup_lvm
+    if [ -n "$LVM_GROUP" ]
+    then
+        setup_lvm
+    fi
 
     format_filesystems
 
@@ -343,7 +346,10 @@ unmount_filesystems() {
     then
         swapoff $swap_dev
     fi
-    vgchange -an
+    if [ -n "$LVM_GROUP" ]
+    then
+        vgchange -an
+    fi
     if [ -n "$LUKS_DEV_NAME" ]
     then
         cryptsetup luksClose $luks_dev
@@ -691,8 +697,13 @@ clean() {
     then
         swapoff $swap_dev
     fi
-    vgchange -an
-    vgremove -y $LVM_GROUP
+
+    if [ -n "$LVM_GROUP" ]
+    then
+        vgchange -an
+        vgremove -y $LVM_GROUP
+    fi
+
     if [ -n "$LUKS_DEV_NAME" ]
     then
         cryptsetup luksClose $luks_dev
@@ -757,14 +768,19 @@ fi
 dev="/dev/$DRIVE"
 boot_dev="/dev/${DRIVE}${part_prefix}1"
 arch_dev="/dev/${DRIVE}${part_prefix}2"
-luks_dev="/dev/mapper/$LUKS_DEV_NAME"
-root_dev="/dev/$LVM_GROUP/root"
-swap_dev="/dev/$LVM_GROUP/swap"
-home_dev="/dev/$LVM_GROUP/home"
+
+if [ -n "$LVM_GROUP" ]
+then
+    root_dev="/dev/$LVM_GROUP/root"
+    swap_dev="/dev/$LVM_GROUP/swap"
+    home_dev="/dev/$LVM_GROUP/home"
+fi
+
 lvm_pv="$arch_dev"
 
 if [ -n "$LUKS_DEV_NAME" ]
 then
+    luks_dev="/dev/mapper/$LUKS_DEV_NAME"
     lvm_pv="$luks_dev"
 fi
 
