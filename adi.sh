@@ -75,15 +75,9 @@ setup() {
 
     partition_drive
 
-    if [ -n "$LUKS_DEV_NAME" ]
-    then
-        encrypt_drive
-    fi
+    test -n "$LUKS_DEV_NAME" && encrypt_drive
 
-    if [ -n "$LVM_GROUP" ]
-    then
-        setup_lvm
-    fi
+    test -n "$LVM_GROUP" && setup_lvm
 
     format_filesystems
 
@@ -128,12 +122,7 @@ configure() {
 
     set_initcpio
 
-    if [ -n "$uefi" ]
-    then
-        set_bootctl
-    else
-        set_grub
-    fi
+    test -n "$uefi" && set_bootctl || set_grub
 
     set_wired_network
 
@@ -227,12 +216,7 @@ encrypt_drive() {
     headline "Encrypting partition"
 
     # GRUB does not support LUKS1
-    if [ -n "$uefi" ]
-    then
-        luks_ver="luks2"
-    else
-        luks_ver="luks1"
-    fi
+    test -n "$uefi" && luks_ver="luks2" || luks_ver="luks1"
 
     echo -en "$LUKS_PASSPHRASE" | cryptsetup --type $luks_ver --key-size 512 --hash sha512 luksFormat "$arch_dev"
     echo -en "$LUKS_PASSPHRASE" | cryptsetup luksOpen "$arch_dev" "$LUKS_DEV_NAME"
@@ -322,10 +306,7 @@ arch_chroot() {
     headline "Chrooting..."
 
     cp "$self" "/mnt/$(basename $self)"
-    if [ -f "$conf" ]
-    then
-        cp "$conf" "/mnt/$(basename $conf)"
-    fi
+    test -f "$conf" && cp "$conf" "/mnt/$(basename $conf)"
 
     # LVM workaround before chroot
     if [ -z "$uefi" ]
@@ -373,70 +354,22 @@ detect_cpu() {
 
 
 install_packages() {
-    local packages=''
 
     headline "Installing additional packages"
 
-    # CPU microcode
-    if [ -n "$CPU" ]
-    then
-        packages+=" $CPU-ucode"
-    fi
-
-    # Base
-    if [ -n "$PACKAGES_BASE" ]
-    then
-        packages+=" $PACKAGES_BASE"
-    fi
-
-    # Fonts
-    if [ -n "$PACKAGES_FONTS" ]
-    then
-        packages+=" $PACKAGES_FONTS"
-    fi
-
-    # X
-    if [ -n "$PACKAGES_X" ]
-    then
-        packages+=" $PACKAGES_X"
-    fi
-
-    # WM
-    if [ -n "$PACKAGES_WM" ]
-    then
-        packages+=" $PACKAGES_WM"
-    fi
-
-    # User apps CLI
-    if [ -n "$PACKAGES_USER_CLI" ]
-    then
-        packages+=" $PACKAGES_USER_CLI"
-    fi
-
-    # User apps GUI
-    if [ -n "$PACKAGES_USER_GUI" ]
-    then
-        packages+=" $PACKAGES_USER_GUI"
-    fi
+    local packages=''
+    test -n "$CPU"               && packages+=" $CPU-ucode"
+    test -n "$PACKAGES_BASE"     && packages+=" $PACKAGES_BASE"
+    test -n "$PACKAGES_FONTS"    && packages+=" $PACKAGES_FONTS"
+    test -n "$PACKAGES_X"        && packages+=" $PACKAGES_X"
+    test -n "$PACKAGES_WM"       && packages+=" $PACKAGES_WM"
+    test -n "$PACKAGES_USER_CLI" && packages+=" $PACKAGES_USER_CLI"
+    test -n "$PACKAGES_USER_GUI" && packages+=" $PACKAGES_USER_GUI"
+    test -z "$uefi"              && packages+=" grub"
 
     if [ -n "$VIDEO_DRIVER" ]
     then
-        if [ "$VIDEO_DRIVER" == "nvidia" ]
-        then
-            packages+=" nvidia nvidia-utils nvidia-settings"
-
-            cat > /etc/modprobe.d/nvidia.conf <<EOF
-options nvidia_drm modeset=1
-blacklist nouveau
-EOF
-        else
-            packages+=" xf86-video-$VIDEO_DRIVER"
-        fi
-    fi
-
-    if [ -z "$uefi" ]
-    then
-        packages+=" grub"
+        test "$VIDEO_DRIVER" == "nvidia" && packages+=" nvidia nvidia-utils nvidia-settings" || packages+=" xf86-video-$VIDEO_DRIVER"
     fi
 
     pacman -Sy --noconfirm $packages
@@ -642,6 +575,14 @@ set_userland() {
 
     headline "Configuring userland"
 
+    if [ "$VIDEO_DRIVER" == "nvidia" ]
+    then
+        cat > /etc/modprobe.d/nvidia.conf <<EOF
+options nvidia_drm modeset=1
+blacklist nouveau
+EOF
+    fi
+
     if [ -n "$PACKAGES_WM" ]
     then
         cat > /etc/sddm.conf <<EOF
@@ -725,6 +666,7 @@ headline() {
 }
 
 password_prompt() {
+
     local msg="$1"; shift
 
     while true; do
@@ -785,10 +727,7 @@ then
 fi
 
 # source the default conf file if exists
-if [ -f "$conf" ]
-then
-    source "$conf"
-fi
+test -f "$conf" && source "$conf"
 
 test -d /sys/firmware/efi && uefi=1
 
