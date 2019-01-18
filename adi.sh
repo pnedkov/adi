@@ -13,9 +13,9 @@ setup() {
 
     partition_drive
 
-    test -n "$LUKS_DEV_NAME" && encrypt_drive
+    [ -n "$LUKS_DEV_NAME" ] && encrypt_drive
 
-    test -n "$LVM_GROUP" && setup_lvm
+    [ -n "$LVM_GROUP" ] && setup_lvm
 
     format_filesystems
 
@@ -60,7 +60,7 @@ configure() {
 
     set_initcpio
 
-    test -n "$uefi" && set_bootctl || set_grub
+    [ -n "$uefi" ] && set_bootctl || set_grub
 
     set_wired_network
 
@@ -125,27 +125,54 @@ partition_drive() {
 
     headline "Creating partitions"
 
+    # set partition table
     if [ -n "$uefi" ]
     then
-        parted -s "$dev" \
-            mklabel gpt
+        parted -s "$dev" mklabel gpt
     else
-        parted -s "$dev" \
-            mklabel msdos
+        parted -s "$dev" mklabel msdos
     fi
 
-    parted -s "$dev" \
-        mkpart primary 0% 512M \
-        mkpart primary 512M 100% \
-        set 2 lvm on
-
-    if [ -n "$uefi" ]
+    # create partitions
+    if [ -n "$LVM_GROUP" ]
     then
         parted -s "$dev" \
-            set 1 esp on
+            mkpart primary 0% ${BOOT_SIZE}MiB \
+            mkpart primary ${BOOT_SIZE}MiB 100% \
+            set 2 lvm on
     else
-        parted -s "$dev" \
-            set 1 boot on
+        # create boot partition
+        start_pos="0%"
+        [ -n "$BOOT_SIZE" ] && parted -s "$dev" mkpart primary $start_pos ${BOOT_SIZE}MiB
+
+        # create swap partition
+        [ -n "$BOOT_SIZE" ] && { start_pos="${BOOT_SIZE}MiB"; end_pos="$((BOOT_SIZE + SWAP_SIZE))MiB"; } || { start_pos="0%"; end_pos="${SWAP_SIZE}MiB"; }
+        [ -n "$SWAP_SIZE" ] && parted -s "$dev" mkpart primary $start_pos $end_pos
+
+        # create root partition
+        [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="${BOOT_SIZE}MiB"; end_pos="$((BOOT_SIZE + ROOT_SIZE))MiB"; }
+        [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="${SWAP_SIZE}MiB"; end_pos="$((SWAP_SIZE + ROOT_SIZE))MiB"; }
+        [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="$((BOOT_SIZE + SWAP_SIZE))MiB"; end_pos="$((BOOT_SIZE + SWAP_SIZE + ROOT_SIZE))MiB"; }
+        [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="0%"; end_pos="${ROOT_SIZE}MiB"; }
+        [ -z "$ROOT_SIZE" ] && end_pos="100%"
+        parted -s "$dev" mkpart primary $start_pos $end_pos
+
+        # create home partition
+        [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="${ROOT_SIZE}MiB"; }
+        [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="$((BOOT_SIZE + ROOT_SIZE))MiB"; }
+        [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="$((SWAP_SIZE + ROOT_SIZE))MiB"; }
+        [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="$((BOOT_SIZE + SWAP_SIZE + ROOT_SIZE))MiB"; }
+        [ -n "$ROOT_SIZE" ] && parted -s "$dev" mkpart primary $start_pos 100%
+    fi
+
+    # set esp/boot flag
+    if [ -n "$uefi" ]
+    then
+        parted -s "$dev" set 1 esp on
+    else
+        boot_flag_part=1
+        [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && boot_flag_part=2
+        parted -s "$dev" set $boot_flag_part boot on
     fi
 }
 
@@ -154,7 +181,7 @@ encrypt_drive() {
     headline "Encrypting partition"
 
     # GRUB does not support LUKS1
-    test -n "$uefi" && luks_ver="luks2" || luks_ver="luks1"
+    [ -n "$uefi" ] && luks_ver="luks2" || luks_ver="luks1"
 
     echo -en "$LUKS_PASSPHRASE" | cryptsetup --type $luks_ver --key-size 512 --hash sha512 luksFormat "$arch_dev"
     echo -en "$LUKS_PASSPHRASE" | cryptsetup luksOpen "$arch_dev" "$LUKS_DEV_NAME"
@@ -191,7 +218,7 @@ format_filesystems() {
     then
         mkfs.vfat -F32 $boot_dev
     else
-        mkfs.$FS $boot_dev
+        [ -n "$boot_dev" ] && mkfs.$FS $boot_dev
     fi
 
     mkfs.$FS $root_dev
@@ -244,7 +271,7 @@ arch_chroot() {
     headline "Chrooting..."
 
     cp "$self" "/mnt/$(basename $self)"
-    test -f "$conf" && cp "$conf" "/mnt/$(basename $conf)"
+    [ -f "$conf" ] && cp "$conf" "/mnt/$(basename $conf)"
 
     # LVM workaround before chroot
     if [ -z "$uefi" ]
@@ -296,18 +323,18 @@ install_packages() {
     headline "Installing additional packages"
 
     local packages=''
-    test -n "$CPU"               && packages+=" $CPU-ucode"
-    test -n "$PACKAGES_BASE"     && packages+=" $PACKAGES_BASE"
-    test -n "$PACKAGES_FONTS"    && packages+=" $PACKAGES_FONTS"
-    test -n "$PACKAGES_X"        && packages+=" $PACKAGES_X"
-    test -n "$PACKAGES_WM"       && packages+=" $PACKAGES_WM"
-    test -n "$PACKAGES_USER_CLI" && packages+=" $PACKAGES_USER_CLI"
-    test -n "$PACKAGES_USER_GUI" && packages+=" $PACKAGES_USER_GUI"
-    test -z "$uefi"              && packages+=" grub"
+    [ -n "$CPU" ]               && packages+=" $CPU-ucode"
+    [ -n "$PACKAGES_BASE" ]     && packages+=" $PACKAGES_BASE"
+    [ -n "$PACKAGES_FONTS" ]    && packages+=" $PACKAGES_FONTS"
+    [ -n "$PACKAGES_X" ]        && packages+=" $PACKAGES_X"
+    [ -n "$PACKAGES_WM" ]       && packages+=" $PACKAGES_WM"
+    [ -n "$PACKAGES_USER_CLI" ] && packages+=" $PACKAGES_USER_CLI"
+    [ -n "$PACKAGES_USER_GUI" ] && packages+=" $PACKAGES_USER_GUI"
+    [ -z "$uefi" ]              && packages+=" grub"
 
     if [ -n "$VIDEO_DRIVER" ]
     then
-        test "$VIDEO_DRIVER" == "nvidia" && packages+=" nvidia nvidia-utils nvidia-settings" || packages+=" xf86-video-$VIDEO_DRIVER"
+        [[ "$VIDEO_DRIVER" == "nvidia" ]] && packages+=" nvidia nvidia-utils nvidia-settings" || packages+=" xf86-video-$VIDEO_DRIVER"
     fi
 
     pacman -Sy --noconfirm $packages
@@ -339,7 +366,7 @@ EOF
 
     local ip=$(ip r | grep "default via" | cut -d " " -f 3)
     local domain=$(grep -E "^domain " /etc/resolv.conf | cut -d " " -f 2)
-    test -z "$domain" && domain=$(grep -E "^search " /etc/resolv.conf | cut -d " " -f 2)
+    [ -z "$domain" ] && domain=$(grep -E "^search " /etc/resolv.conf | cut -d " " -f 2)
 
     if [[ -n "$domain" ]]
     then
@@ -640,41 +667,40 @@ self="$(readlink -f $0)"
 conf="$(dirname $self)/$(basename $self .sh).conf"
 
 # source the default conf file if exists
-if [ -f "$conf" ]
-then
-    source "$conf"
-else
-    echo "ERROR: No such file: $conf"
-    exit 1
-fi
+[ -f "$conf" ] && source "$conf" || { echo "ERROR: No such file: $conf"; exit 1; }
 
-if [[ "$DRIVE" =~ ^(md|nvme) ]]
-then
-    part_prefix="p"
-fi
+# handle partitions on md and nvme devices
+[[ "$DRIVE" =~ ^(md|nvme) ]] && part_prefix="p"
 
 # initialize all devices
 dev="/dev/$DRIVE"
-boot_dev="/dev/${DRIVE}${part_prefix}1"
-arch_dev="/dev/${DRIVE}${part_prefix}2"
+[ -n "$BOOT_SIZE" ] && boot_dev="${dev}${part_prefix}1"
+[ -n "$LUKS_DEV_NAME" ] && luks_dev="/dev/mapper/$LUKS_DEV_NAME"
 
 if [ -n "$LVM_GROUP" ]
 then
+    arch_dev="${dev}${part_prefix}2"
     root_dev="/dev/$LVM_GROUP/root"
-    swap_dev="/dev/$LVM_GROUP/swap"
-    home_dev="/dev/$LVM_GROUP/home"
+    [ -n "$SWAP_SIZE" ] && swap_dev="/dev/$LVM_GROUP/swap"
+    [ -n "$ROOT_SIZE" ] && home_dev="/dev/$LVM_GROUP/home"
+
+    [ -n "$LUKS_DEV_NAME" ] && lvm_pv="$luks_dev" || lvm_pv="$arch_dev"
+else
+    [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] &&   arch_dev="${dev}${part_prefix}1"
+    [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] &&   arch_dev="${dev}${part_prefix}2"
+    [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { swap_dev="${dev}${part_prefix}1"; arch_dev="${dev}${part_prefix}2"; }
+    [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { swap_dev="${dev}${part_prefix}2"; arch_dev="${dev}${part_prefix}3"; }
+
+    [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${part_prefix}2"
+    [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${part_prefix}3"
+    [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${part_prefix}3"
+    [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${part_prefix}4"
+
+    root_dev="$arch_dev"
 fi
 
-lvm_pv="$arch_dev"
 
-if [ -n "$LUKS_DEV_NAME" ]
-then
-    luks_dev="/dev/mapper/$LUKS_DEV_NAME"
-    lvm_pv="$luks_dev"
-fi
-
-
-test -d /sys/firmware/efi && uefi=1
+[ -d /sys/firmware/efi ] && uefi=1
 
 if [ "$1" == "chroot" ]
 then
