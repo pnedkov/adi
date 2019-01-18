@@ -1,68 +1,6 @@
 #!/bin/bash
 set -e
 
-# Drive to install to
-DRIVE='sda'
-
-# File system for / and /home: xfs/ext4
-FS='xfs'
-
-# Encrypted device (leave blank to disable LUKS encryption)
-LUKS_DEV_NAME='cryptarch'
-
-# LUKS passphrase (leave blank to be prompted)
-LUKS_PASSPHRASE=''
-
-# LVM group name
-LVM_GROUP='arch'
-
-# Size of swap LV (leave blank to disable)
-SWAP_SIZE='2G'
-
-# Size of root LV (leave blank for 100%FREE and no separate /home LV)
-ROOT_SIZE='16G'
-
-# Hostname
-HOSTNAME='archy'
-
-# Root password (leave blank to be prompted)
-ROOT_PASSWORD=''
-
-# Main user member of wheel group (leave blank to disable user creation)
-USER_NAME='plamen'
-
-# The main user's password (leave blank to be prompted)
-USER_PASSWORD=''
-
-# System timezone
-TIMEZONE='America/Los_Angeles'
-
-# System keymap: us/dvorak
-KEYMAP='us'
-
-# Video driver: amdgpu/ati/dummy/fbdev/intel/nouveau/nvidia/vesa/vmware/voodoo/qxl or blank
-VIDEO_DRIVER=''
-
-# The fastest mirror near you
-MIRROR='http://mirror.lty.me/archlinux/$repo/os/$arch'
-
-# Packages CLI (comment to disable)
-PACKAGES_BASE='net-tools ntp openssh sudo wget vim bash-completion'
-PACKAGES_FONTS='terminus-font ttf-hack ttf-anonymous-pro ttf-dejavu ttf-freefont ttf-liberation'
-PACKAGES_USER_CLI='htop netcat alsa-utils'
-
-# Packages GUI
-#PACKAGES_X='xorg-server xorg-apps xorg-xinit xterm'
-
-# KDE full
-#PACKAGES_WM='plasma-meta kde-applications-meta kde-gtk-config'
-# KDE base
-#PACKAGES_WM='plasma-desktop plasma-nm plasma-pa kde-gtk-config sddm-kcm kdebase-meta kdegraphics-meta kdenetwork-meta kdeutils-meta'
-# Xfce
-#PACKAGES_WM='xfce4 xfce4-goodies'
-
-#PACKAGES_USER_GUI='terminator chromium'
-
 
 #
 # Setup
@@ -701,6 +639,15 @@ password_prompt() {
 self="$(readlink -f $0)"
 conf="$(dirname $self)/$(basename $self .sh).conf"
 
+# source the default conf file if exists
+if [ -f "$conf" ]
+then
+    source "$conf"
+else
+    echo "ERROR: No such file: $conf"
+    exit 1
+fi
+
 if [[ "$DRIVE" =~ ^(md|nvme) ]]
 then
     part_prefix="p"
@@ -726,8 +673,6 @@ then
     lvm_pv="$luks_dev"
 fi
 
-# source the default conf file if exists
-test -f "$conf" && source "$conf"
 
 test -d /sys/firmware/efi && uefi=1
 

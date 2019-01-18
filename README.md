@@ -64,5 +64,5 @@ This installation script is intended to suit only my needs. I borrowed some idea
 3. ```pacman -Sy git```
 4. ```git clone https://github.com/pnedkov/adi.git```
 5. ```cd adi/```
-6. Edit the variables in adi.sh *or* deploy your own adi.conf
+6. ```cp sample.adi.conf adi.conf``` and edit the configuration file
 7. ```./adi.sh```
