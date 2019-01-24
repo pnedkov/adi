@@ -4,25 +4,26 @@ ADI is a shell script for installing Arch Linux. It requires minimal initial con
 
 This installation script is intended to suit only my needs. I borrowed some ideas from other Arch Linux installation scripts here on github.com.
 
-### Disk layout
+## Disk layout
 
+### LVM
 ```
 +----------------+----------------------+----------------------+---------------------------------------+
 |                |                      |                      |                                       |
-| Boot partition | Logical volume 1     | Logical volume 2     | Logical volume 3                      |
+| Boot           | Logical volume 1     | Logical volume 2     | Logical volume 3                      |
 |                | (optional)           |                      | (optional)                            |
 |                |                      |                      |                                       |
 | /dev/sda1      | /dev/$LVM_GROUP/swap | /dev/$LVM_GROUP/root | /dev/$LVM_GROUP/home                  |
 |                |                      |                      |                                       |
-| 512MB          | $SWAP_SIZE           | $ROOT_SIZE           | SIZE = sda2 - $SWAP_SIZE - $ROOT_SIZE |
+| $BOOT_SIZE     | $SWAP_SIZE           | $ROOT_SIZE           | SIZE = sda2 - $SWAP_SIZE - $ROOT_SIZE |
 |                |                      |                      |                                       |
-| Mount: /boot   |                      | Mount: /             | Mount: /home                          |
+| /boot          |                      | /                    | /home                                 |
 |                |                      |                      |                                       |
-| File system:   |                      | File system = $FS    | File system = $FS                     |
+| BIOS: $FS      |                      | $FS                  | $FS                                   |
 |                |                      |                      |                                       |
-|  BIOS: $FS     +----------------------+----------------------+---------------------------------------+
+| UEFI: FAT32    +----------------------+----------------------+---------------------------------------+
 |                |                                                                                     |
-|  UEFI: FAT32   |                       LUKS encrypted partition (optional)                           |
+|                |                       LUKS encrypted partition (optional)                           |
 |                |                                                                                     |
 |                |                       /dev/mapper/$LUKS_DEV_NAME                                    |
 |                |                                                                                     |
@@ -32,16 +33,48 @@ This installation script is intended to suit only my needs. I borrowed some idea
 |                |                                                                                     |
 +----------------+-------------------------------------------------------------------------------------+
 |                                                                                                      |
-|                              /dev/sda - $DRIVE : msdos (BIOS) or gpt (UEFI)                          |
+|                                    /dev/$DRIVE : msdos (BIOS) or gpt (UEFI)                          |
 |                                                                                                      |
 +------------------------------------------------------------------------------------------------------+
 ```
 
-### Prerequisites:
+### Standard partitions
+```
++----------------+-----------------+----------------------------+--------------------------------------+
+|                |                 |                            |                                      |
+|  Boot          |  Swap           |  Root                      |  Home                                |
+|  (optional)    |  (optional)     |                            |  (optional)                          |
+|                |                 |                            |                                      |
+|  $BOOT_SIZE    |  $SWAP_SIZE     |  $ROOT_SIZE                |  SIZE depends on $ROOT_SIZE          |
+|                |                 |                            |                                      |
+|  /boot         |                 |  /                         |  /home                               |
+|                |                 |                            |                                      |
+|  BIOS: $FS     |                 |  $FS                       |  $FS                                 |
+|                |                 |                            |                                      |
+|  UEFI: FAT32   |                 |                            |                                      |
+|                |                 |                            |                                      |
+|                |                 |                            |                                      |
+|                |                 |                            |                                      |
+|                |                 +----------------------------+                                      |
+|                |                 |                            |                                      |
+|                |                 |  /dev/mapper/cryptarch     |                                      |
+|                |                 |        (optional)          |                                      |
++------------------------------------------------------------------------------------------------------+
+|                |                 |                            |                                      |
+|   /dev/sda1    |   /dev/sda2     |         /dev/sda3          |              /dev/sda4               |
+|                |                 |                            |                                      |
++----------------+-----------------+----------------------------+--------------------------------------+
+|                                                                                                      |
+|                                    /dev/$DRIVE : msdos (BIOS) or gpt (UEFI)                          |
+|                                                                                                      |
++------------------------------------------------------------------------------------------------------+
+```
+
+## Prerequisites:
  * Backup!
  * The disk where Arch Linux will be installed should not contain any partitions
 
-### Features
+## Features
  * Completely non-interactive Arch Linux installation:
     * by directly editing the variables in adi.sh
     * by deploying adi.conf in the same directory as adi.sh containing all variables you want customized
@@ -53,12 +86,12 @@ This installation script is intended to suit only my needs. I borrowed some idea
  * User defined size for /, /home and swap
  * User defined lists of packages that will be installed
 
-### Limitations
+## Limitations
  * Cannot preserve any data on $DRIVE
  * Cannot install on a drive with existing partitions
  * Cannot perform sophisticated setup configuration with custom disk layout
 
-### Installation instructions
+## Installation instructions
 1. Boot from the official Arch Linux iso
 2. Configure Internet connection
 3. ```pacman -Sy git```
