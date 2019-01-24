@@ -668,7 +668,7 @@ else
     [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${part_prefix}3"
     [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${part_prefix}4"
 
-    root_dev="$arch_dev"
+    [ -n "$LUKS_DEV_NAME" ] && root_dev="$luks_dev" || root_dev="$arch_dev"
 fi
 
 
