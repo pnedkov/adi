@@ -126,12 +126,8 @@ partition_drive() {
     headline "Creating partitions"
 
     # set partition table
-    if [ -n "$uefi" ]
-    then
-        parted -s "$dev" mklabel gpt
-    else
-        parted -s "$dev" mklabel msdos
-    fi
+    [ -n "$uefi" ] && pt="gpt" || pt="msdos"
+    parted -s "$dev" mklabel $pt
 
     # create partitions
     if [ -n "$LVM_GROUP" ]
@@ -223,15 +219,9 @@ format_filesystems() {
 
     mkfs.$FS $root_dev
 
-    if [ -e "$home_dev" ]
-    then
-        mkfs.$FS $home_dev
-    fi
+    [ -n "$home_dev" ] && mkfs.$FS $home_dev
 
-    if [ -n "$SWAP_SIZE" ]
-    then
-        mkswap $swap_dev
-    fi
+    [ -n "$swap_dev" ] && mkswap $swap_dev
 }
 
 mount_filesystems() {
@@ -249,10 +239,7 @@ mount_filesystems() {
         mount $home_dev /mnt/home
     fi
 
-    if [ -n "$SWAP_SIZE" ]
-    then
-        swapon $swap_dev
-    fi
+    [ -n "$swap_dev" ] && swapon $swap_dev
 }
 
 install_base() {
@@ -288,18 +275,9 @@ unmount_filesystems() {
     headline "Unmounting filesystems"
 
     umount -R /mnt
-    if [ -n "$SWAP_SIZE" ]
-    then
-        swapoff $swap_dev
-    fi
-    if [ -n "$LVM_GROUP" ]
-    then
-        vgchange -an
-    fi
-    if [ -n "$LUKS_DEV_NAME" ]
-    then
-        cryptsetup luksClose $luks_dev
-    fi
+    [ -n "$swap_dev" ] && swapoff $swap_dev
+    [ -n "$LVM_GROUP" ] && vgchange -an
+    [ -n "$LUKS_DEV_NAME" ] && cryptsetup luksClose $luks_dev
 }
 
 ###
@@ -599,10 +577,7 @@ create_user() {
 clean() {
 
     umount -R /mnt
-    if [ -n "$SWAP_SIZE" ]
-    then
-        swapoff $swap_dev
-    fi
+    [ -n "$swap_dev" ] && swapoff $swap_dev
 
     if [ -n "$LVM_GROUP" ]
     then
@@ -610,10 +585,7 @@ clean() {
         vgremove -y $LVM_GROUP
     fi
 
-    if [ -n "$LUKS_DEV_NAME" ]
-    then
-        cryptsetup luksClose $luks_dev
-    fi
+    [ -n "$luks_dev" ] && cryptsetup luksClose $luks_dev
 
     parted -s "$dev" \
         rm 2 \
