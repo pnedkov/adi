@@ -125,6 +125,8 @@ partition_drive() {
 
     headline "Creating partitions"
 
+    local u='MiB'
+
     # set partition table
     [ -n "$uefi" ] && pt="gpt" || pt="msdos"
     parted -s "$dev" mklabel $pt
@@ -133,31 +135,31 @@ partition_drive() {
     if [ -n "$LVM_GROUP" ]
     then
         parted -s "$dev" \
-            mkpart primary 0% ${BOOT_SIZE}MiB \
-            mkpart primary ${BOOT_SIZE}MiB 100% \
+            mkpart primary 0% ${BOOT_SIZE}${u} \
+            mkpart primary ${BOOT_SIZE}${u} 100% \
             set 2 lvm on
     else
         # create boot partition
         start_pos="0%"
-        [ -n "$BOOT_SIZE" ] && parted -s "$dev" mkpart primary $start_pos ${BOOT_SIZE}MiB
+        [ -n "$BOOT_SIZE" ] && parted -s "$dev" mkpart primary $start_pos ${BOOT_SIZE}${u}
 
         # create swap partition
-        [ -n "$BOOT_SIZE" ] && { start_pos="${BOOT_SIZE}MiB"; end_pos="$((BOOT_SIZE + SWAP_SIZE))MiB"; } || { start_pos="0%"; end_pos="${SWAP_SIZE}MiB"; }
+        [ -n "$BOOT_SIZE" ] && { start_pos="${BOOT_SIZE}${u}"; end_pos="$((BOOT_SIZE + SWAP_SIZE))${u}"; } || { start_pos="0%"; end_pos="${SWAP_SIZE}${u}"; }
         [ -n "$SWAP_SIZE" ] && parted -s "$dev" mkpart primary $start_pos $end_pos
 
         # create root partition
-        [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="${BOOT_SIZE}MiB"; end_pos="$((BOOT_SIZE + ROOT_SIZE))MiB"; }
-        [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="${SWAP_SIZE}MiB"; end_pos="$((SWAP_SIZE + ROOT_SIZE))MiB"; }
-        [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="$((BOOT_SIZE + SWAP_SIZE))MiB"; end_pos="$((BOOT_SIZE + SWAP_SIZE + ROOT_SIZE))MiB"; }
-        [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="0%"; end_pos="${ROOT_SIZE}MiB"; }
+        [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="${BOOT_SIZE}${u}"; end_pos="$((BOOT_SIZE + ROOT_SIZE))${u}"; }
+        [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="${SWAP_SIZE}${u}"; end_pos="$((SWAP_SIZE + ROOT_SIZE))${u}"; }
+        [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="$((BOOT_SIZE + SWAP_SIZE))${u}"; end_pos="$((BOOT_SIZE + SWAP_SIZE + ROOT_SIZE))${u}"; }
+        [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="0%"; end_pos="${ROOT_SIZE}${u}"; }
         [ -z "$ROOT_SIZE" ] && end_pos="100%"
         parted -s "$dev" mkpart primary $start_pos $end_pos
 
         # create home partition
-        [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="${ROOT_SIZE}MiB"; }
-        [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="$((BOOT_SIZE + ROOT_SIZE))MiB"; }
-        [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="$((SWAP_SIZE + ROOT_SIZE))MiB"; }
-        [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="$((BOOT_SIZE + SWAP_SIZE + ROOT_SIZE))MiB"; }
+        [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="${ROOT_SIZE}${u}"; }
+        [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="$((BOOT_SIZE + ROOT_SIZE))${u}"; }
+        [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="$((SWAP_SIZE + ROOT_SIZE))${u}"; }
+        [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="$((BOOT_SIZE + SWAP_SIZE + ROOT_SIZE))${u}"; }
         [ -n "$ROOT_SIZE" ] && parted -s "$dev" mkpart primary $start_pos 100%
     fi
 
