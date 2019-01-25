@@ -219,9 +219,13 @@ format_filesystems() {
 
     mkfs.$FS $root_dev
 
-    [ -n "$home_dev" ] && mkfs.$FS $home_dev
+    if [ -n "$home_dev" ]; then
+        mkfs.$FS $home_dev
+    fi
 
-    [ -n "$swap_dev" ] && mkswap $swap_dev
+    if [ -n "$swap_dev" ]; then
+        mkswap $swap_dev
+    fi
 }
 
 mount_filesystems() {
@@ -239,7 +243,9 @@ mount_filesystems() {
         mount $home_dev /mnt/home
     fi
 
-    [ -n "$swap_dev" ] && swapon $swap_dev
+    if [ -n "$swap_dev" ]; then
+        swapon $swap_dev
+    fi
 }
 
 install_base() {
@@ -275,9 +281,18 @@ unmount_filesystems() {
     headline "Unmounting filesystems"
 
     umount -R /mnt
-    [ -n "$swap_dev" ] && swapoff $swap_dev
-    [ -n "$LVM_GROUP" ] && vgchange -an
-    [ -n "$LUKS_DEV_NAME" ] && cryptsetup luksClose $luks_dev
+
+    if [ -n "$swap_dev" ]; then
+        swapoff $swap_dev
+    fi
+
+    if [ -n "$LVM_GROUP" ]; then
+        vgchange -an
+    fi
+
+    if [ -n "$luks_dev" ]; then
+        cryptsetup luksClose $luks_dev
+    fi
 }
 
 ###
