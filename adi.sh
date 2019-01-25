@@ -382,7 +382,7 @@ set_locale() {
 
     headline "Setting locale"
 
-    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+    echo "$LOCALE" >> /etc/locale.gen
     locale-gen
     locale > /etc/locale.conf
 }
