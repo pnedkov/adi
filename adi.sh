@@ -234,8 +234,11 @@ mount_filesystems() {
 
     mount $root_dev /mnt
 
-    mkdir /mnt/boot
-    mount $boot_dev /mnt/boot
+    if [ -n "$boot_dev" ]
+    then
+        mkdir /mnt/boot
+        mount $boot_dev /mnt/boot
+    fi
 
     if [ -e "$home_dev" ]
     then
