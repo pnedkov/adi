@@ -189,8 +189,8 @@ setup_lvm() {
 
     headline "Setting up LVM"
 
-    pvcreate -y "$lvm_pv"
-    vgcreate -y "$LVM_GROUP" "$lvm_pv"
+    pvcreate -y "$lvmp_dev"
+    vgcreate -y "$LVM_GROUP" "$lvmp_dev"
 
     if [ -n "$SWAP_SIZE" ]
     then
@@ -676,7 +676,7 @@ then
     [ -n "$SWAP_SIZE" ] && swap_dev="/dev/$LVM_GROUP/swap"
     [ -n "$ROOT_SIZE" ] && home_dev="/dev/$LVM_GROUP/home"
 
-    [ -n "$LUKS_DEV_NAME" ] && lvm_pv="$luks_dev" || lvm_pv="$arch_dev"
+    [ -n "$LUKS_DEV_NAME" ] && lvmp_dev="$luks_dev" || lvmp_dev="$arch_dev"
 else
     [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] &&   arch_dev="${dev}${part_prefix}1"
     [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] &&   arch_dev="${dev}${part_prefix}2"
