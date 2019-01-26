@@ -651,6 +651,23 @@ password_prompt() {
     done
 }
 
+debug() {
+
+    echo
+    echo "dev      = $dev"
+    echo
+    echo "arch_dev = $arch_dev"
+    echo
+    echo "luks_dev = $luks_dev"
+    echo "lvmp_dev = $lvmp_dev"
+    echo
+    echo "boot_dev = $boot_dev"
+    echo "swap_dev = $swap_dev"
+    echo "root_dev = $root_dev"
+    echo "home_dev = $home_dev"
+    echo
+    exit
+}
 
 #
 # Main
@@ -691,7 +708,6 @@ else
     [ -n "$LUKS_DEV_NAME" ] && root_dev="$luks_dev" || root_dev="$arch_dev"
 fi
 
-
 [ -d /sys/firmware/efi ] && uefi=1
 
 if [ "$1" == "chroot" ]
@@ -700,6 +716,9 @@ then
 elif [ "$1" == "clean" ]
 then
     clean
+elif [ "$1" == "debug" ]
+then
+    debug
 else
     setup
 fi
