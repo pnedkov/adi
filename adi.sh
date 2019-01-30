@@ -140,18 +140,17 @@ partition_drive() {
             set 2 lvm on
     else
         # create boot partition
-        start_pos="0%"
-        [ -n "$BOOT_SIZE" ] && parted -s "$dev" mkpart primary $start_pos ${BOOT_SIZE}${u}
+        [ -n "$BOOT_SIZE" ] && parted -s "$dev" mkpart primary 0% ${BOOT_SIZE}${u}
 
         # create swap partition
         [ -n "$BOOT_SIZE" ] && { start_pos="${BOOT_SIZE}${u}"; end_pos="$((BOOT_SIZE + SWAP_SIZE))${u}"; } || { start_pos="0%"; end_pos="${SWAP_SIZE}${u}"; }
         [ -n "$SWAP_SIZE" ] && parted -s "$dev" mkpart primary $start_pos $end_pos
 
         # create root partition
+        [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="0%"; end_pos="${ROOT_SIZE}${u}"; }
         [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="${BOOT_SIZE}${u}"; end_pos="$((BOOT_SIZE + ROOT_SIZE))${u}"; }
         [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="${SWAP_SIZE}${u}"; end_pos="$((SWAP_SIZE + ROOT_SIZE))${u}"; }
         [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { start_pos="$((BOOT_SIZE + SWAP_SIZE))${u}"; end_pos="$((BOOT_SIZE + SWAP_SIZE + ROOT_SIZE))${u}"; }
-        [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] && { start_pos="0%"; end_pos="${ROOT_SIZE}${u}"; }
         [ -z "$ROOT_SIZE" ] && end_pos="100%"
         parted -s "$dev" mkpart primary $start_pos $end_pos
 
@@ -168,8 +167,7 @@ partition_drive() {
     then
         parted -s "$dev" set 1 esp on
     else
-        boot_flag_part=1
-        [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && boot_flag_part=2
+        [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && boot_flag_part=2 || boot_flag_part=1
         parted -s "$dev" set $boot_flag_part boot on
     fi
 }
