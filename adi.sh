@@ -686,31 +686,31 @@ conf="$(dirname $self)/$(basename $self .sh).conf"
 [ -f "$conf" ] && source "$conf" || { echo "ERROR: No such file: $conf"; exit 1; }
 
 # handle partitions on md and nvme devices
-[[ "$DRIVE" =~ ^(md|nvme) ]] && part_prefix="p"
+[[ "$DRIVE" =~ ^(md|nvme) ]] && p="p"
 
 # initialize all devices
 dev="/dev/$DRIVE"
-[ -n "$BOOT_SIZE" ] && boot_dev="${dev}${part_prefix}1"
+[ -n "$BOOT_SIZE" ] && boot_dev="${dev}${p}1"
 [ -n "$LUKS_DEV_NAME" ] && luks_dev="/dev/mapper/$LUKS_DEV_NAME"
 
 if [ -n "$LVM_GROUP" ]
 then
-    arch_dev="${dev}${part_prefix}2"
+    arch_dev="${dev}${p}2"
     root_dev="/dev/$LVM_GROUP/root"
     [ -n "$SWAP_SIZE" ] && swap_dev="/dev/$LVM_GROUP/swap"
     [ -n "$ROOT_SIZE" ] && home_dev="/dev/$LVM_GROUP/home"
 
     [ -n "$LUKS_DEV_NAME" ] && lvmp_dev="$luks_dev" || lvmp_dev="$arch_dev"
 else
-    [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] &&   arch_dev="${dev}${part_prefix}1"
-    [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] &&   arch_dev="${dev}${part_prefix}2"
-    [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { swap_dev="${dev}${part_prefix}1"; arch_dev="${dev}${part_prefix}2"; }
-    [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { swap_dev="${dev}${part_prefix}2"; arch_dev="${dev}${part_prefix}3"; }
+    [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] &&   arch_dev="${dev}${p}1"
+    [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" ]] &&   arch_dev="${dev}${p}2"
+    [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { swap_dev="${dev}${p}1"; arch_dev="${dev}${p}2"; }
+    [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" ]] && { swap_dev="${dev}${p}2"; arch_dev="${dev}${p}3"; }
 
-    [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${part_prefix}2"
-    [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${part_prefix}3"
-    [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${part_prefix}3"
-    [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${part_prefix}4"
+    [[ -z "$BOOT_SIZE" && -z "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${p}2"
+    [[ -n "$BOOT_SIZE" && -z "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${p}3"
+    [[ -z "$BOOT_SIZE" && -n "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${p}3"
+    [[ -n "$BOOT_SIZE" && -n "$SWAP_SIZE" && -n "$ROOT_SIZE" ]] && home_dev="${dev}${p}4"
 
     [ -n "$LUKS_DEV_NAME" ] && root_dev="$luks_dev" || root_dev="$arch_dev"
 fi
