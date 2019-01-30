@@ -11,6 +11,8 @@ setup() {
 
     set_passwords
 
+    set_time
+
     partition_drive
 
     [ -n "$LUKS_DEV_NAME" ] && encrypt_drive
@@ -119,6 +121,13 @@ set_passwords() {
         password_prompt "Enter the password for user $USER_NAME: "
         USER_PASSWORD="$password"
     fi
+}
+
+set_time() {
+
+    headline "Set time"
+
+    timedatectl set-ntp true
 }
 
 partition_drive() {
