@@ -493,7 +493,7 @@ set_grub() {
     grub-mkconfig -o /boot/grub/grub.cfg
 }
 
-set_wired_network(){
+set_wired_network() {
 
     headline "Configuring netowrk"
 
