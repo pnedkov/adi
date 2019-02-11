@@ -605,7 +605,7 @@ clean() {
 
     mountpoint /mnt &> /dev/null && umount -R /mnt
 
-    [ -n "$swap_dev" ] && swapoff $swap_dev
+    [[ -n "$swap_dev" && $(swapon -s | grep -s "$swap_dev") ]] && swapoff $swap_dev
 
     if [ -n "$LVM_GROUP" ]
     then
