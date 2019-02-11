@@ -690,7 +690,7 @@ self="$(readlink -f $0)"
 conf="$(dirname $self)/$(basename $self .sh).conf"
 
 # source the default conf file if exists
-[ -f "$conf" ] && source "$conf" || { echo "ERROR: No such file: $conf"; exit 1; }
+[ -f "$conf" ] && source "$conf" || { echo -e "\nERROR: No such file: $conf\n"; exit 1; }
 
 # handle partitions on md and nvme devices
 [[ "$DRIVE" =~ ^(md|nvme) ]] && p="p"
