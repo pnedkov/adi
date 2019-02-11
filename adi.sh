@@ -223,13 +223,13 @@ format_filesystems() {
     then
         mkfs.vfat -F32 $boot_dev
     else
-        [ -n "$boot_dev" ] && mkfs.$FS $boot_dev
+        [ -n "$boot_dev" ] && mkfs.$FS -q $boot_dev
     fi
 
-    mkfs.$FS $root_dev
+    mkfs.$FS -q $root_dev
 
     if [ -n "$home_dev" ]; then
-        mkfs.$FS $home_dev
+        mkfs.$FS -q $home_dev
     fi
 
     if [ -n "$swap_dev" ]; then

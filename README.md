@@ -83,7 +83,7 @@ ADI is a shell script for installing Arch Linux. It requires minimal initial con
  * No storage device other than $DRIVE will be altered
  * Different disk layouts depending on the configuration
  * User defined size for boot, swap, root and home
- * User defined file system for boot, root and home: ext4/xfs
+ * User defined file system for boot, root and home: xfs/ext4/reiserfs
  * User defined lists of packages separated in different categories
 
 ## Limitations
