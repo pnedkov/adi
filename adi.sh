@@ -615,16 +615,8 @@ clean() {
 
     [ -n "$luks_dev" ] && cryptsetup luksClose $luks_dev
 
-    local partitions=$(partprobe -d -s $dev | tail -c 2)
-    if [[ "$partitions" =~ ^[0-9]+$ ]]
-    then
-        for i in $(seq 1 $partitions); do
-            [ -f "${dev}${p}${i}" ] && wipefs --all --force --quiet "${dev}${p}${i}"
-        done
-    fi
-
+    wipefs --all --force --quiet "${dev}${p}"?
     wipefs --all --force --quiet "$dev"
-    sgdisk --zap-all "$dev" &> /dev/null
 }
 
 ###
