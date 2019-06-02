@@ -93,10 +93,11 @@ ADI is a shell script for installing Arch Linux. It requires minimal initial con
  * Cannot encrypt the /home partition
 
 ## Installation instructions
-1. Boot from the Arch Linux iso
+1. Boot from the [Arch Linux iso](https://www.archlinux.org/download/)
 2. Configure Internet connection
-3. ```pacman -Sy git```
+3. ```pacman -Sy --noconfirm git```
 4. ```git clone https://github.com/pnedkov/adi.git```
 5. ```cd adi/```
-6. ```cp sample.adi.conf adi.conf``` and edit the configuration file
-7. ```./adi.sh```
+6. ```cp sample.adi.conf adi.conf```
+7. ```vim adi.conf```
+8. ```./adi.sh```
