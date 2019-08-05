@@ -264,7 +264,7 @@ install_base() {
 
     headline "Installing base system"
 
-    echo "Server = $MIRROR" > /etc/pacman.d/mirrorlist
+    [ -n "$MIRROR" ] && echo "Server = $MIRROR" > /etc/pacman.d/mirrorlist
 
     pacstrap /mnt base base-devel
     genfstab -U /mnt >> /mnt/etc/fstab
