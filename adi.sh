@@ -266,7 +266,7 @@ install_base() {
 
     [ -n "$MIRROR" ] && echo "Server = $MIRROR" > /etc/pacman.d/mirrorlist
 
-    pacstrap /mnt base base-devel
+    pacstrap /mnt base base-devel linux linux-firmware
     genfstab -U /mnt >> /mnt/etc/fstab
     cp -f /etc/resolv.conf /mnt/etc/resolv.conf
 }
