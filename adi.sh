@@ -501,7 +501,7 @@ set_wired_network() {
     then
         systemctl enable NetworkManager.service
     else
-        local default_net_if=$(ip r | grep "default via" | cut -d " " -f 5)
+        local default_net_if=$(ip r | grep "default via" | head -1 | cut -d " " -f 5)
 
         cat > /etc/systemd/network/20-wired.network <<EOF
 [Match]
