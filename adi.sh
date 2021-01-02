@@ -219,22 +219,15 @@ format_filesystems() {
 
     headline "Formatting filesystems"
 
-    if [ -n "$uefi" ]
-    then
-        mkfs.vfat -F32 $boot_dev
-    else
-        [ -n "$boot_dev" ] && mkfs.$FS -q $boot_dev
-    fi
+    [ -n "$uefi" ] && mkfs.vfat -F32 $boot_dev
+
+    [[ -z "$uefi" && -n "$boot_dev" ]] && mkfs.$FS -q $boot_dev
 
     mkfs.$FS -q $root_dev
 
-    if [ -n "$home_dev" ]; then
-        mkfs.$FS -q $home_dev
-    fi
+    [ -n "$home_dev" ] && mkfs.$FS -q $home_dev
 
-    if [ -n "$swap_dev" ]; then
-        mkswap $swap_dev
-    fi
+    [ -n "$swap_dev" ] && mkswap $swap_dev
 }
 
 mount_filesystems() {
@@ -243,21 +236,11 @@ mount_filesystems() {
 
     mount $root_dev /mnt
 
-    if [ -n "$boot_dev" ]
-    then
-        mkdir /mnt/boot
-        mount $boot_dev /mnt/boot
-    fi
+    [ -n "$boot_dev" ] && mkdir /mnt/boot && mount $boot_dev /mnt/boot
 
-    if [ -e "$home_dev" ]
-    then
-        mkdir /mnt/home
-        mount $home_dev /mnt/home
-    fi
+    [ -e "$home_dev" ] && mkdir /mnt/home && mount $home_dev /mnt/home
 
-    if [ -n "$swap_dev" ]; then
-        swapon $swap_dev
-    fi
+    [ -n "$swap_dev" ] && swapon $swap_dev
 }
 
 install_base() {
@@ -279,11 +262,7 @@ arch_chroot() {
     [ -f "$conf" ] && cp "$conf" "/mnt/$(basename $conf)"
 
     # LVM workaround before chroot
-    if [ -z "$uefi" ]
-    then
-        mkdir /mnt/hostlvm
-        mount --bind /run/lvm /mnt/hostlvm
-    fi
+    [ -z "$uefi" ] && mkdir /mnt/hostlvm && mount --bind /run/lvm /mnt/hostlvm
 
     arch-chroot /mnt /bin/bash -c "export ROOT_PASSWD=$ROOT_PASSWORD USER_PASSWD=$USER_PASSWORD; /$(basename $self) chroot"
 }
@@ -294,17 +273,11 @@ unmount_filesystems() {
 
     umount -R /mnt
 
-    if [ -n "$swap_dev" ]; then
-        swapoff $swap_dev
-    fi
+    [ -n "$swap_dev" ] && swapoff $swap_dev
 
-    if [ -n "$LVM_GROUP" ]; then
-        vgchange -an
-    fi
+    [ -n "$LVM_GROUP" ] && vgchange -an
 
-    if [ -n "$luks_dev" ]; then
-        cryptsetup luksClose $luks_dev
-    fi
+    [ -n "$luks_dev" ] && cryptsetup luksClose $luks_dev
 }
 
 ###
@@ -521,10 +494,7 @@ set_daemons() {
 
     systemctl enable sshd.service
 
-    if [ -n "$PACKAGES_WM" ]
-    then
-        systemctl enable sddm.service
-    fi
+    [ -n "$PACKAGES_WM" ] && systemctl enable sddm.service
 }
 
 set_sudoers() {
@@ -607,11 +577,7 @@ clean() {
 
     [[ -n "$swap_dev" && $(swapon -s | grep -s "$swap_dev") ]] && swapoff $swap_dev
 
-    if [ -n "$LVM_GROUP" ]
-    then
-        vgchange -an
-        vgremove -y $LVM_GROUP
-    fi
+    [ -n "$LVM_GROUP" ] && vgchange -an && vgremove -y $LVM_GROUP
 
     [ -n "$luks_dev" ] && cryptsetup luksClose $luks_dev
 
@@ -716,15 +682,7 @@ fi
 
 [ -d /sys/firmware/efi ] && uefi=1
 
-if [ "$1" == "chroot" ]
-then
-    configure
-elif [ "$1" == "clean" ]
-then
-    clean
-elif [ "$1" == "debug" ]
-then
-    debug
-else
-    setup
-fi
+[ "$1" == "chroot" ] && configure
+[ "$1" == "clean" ] && clean
+[ "$1" == "debug" ] && debug
+[ -z "$1" ] && setup
