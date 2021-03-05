@@ -23,6 +23,8 @@ setup() {
 
     mount_filesystems
 
+    set_mirrors
+
     install_base
 
     arch_chroot
@@ -243,11 +245,18 @@ mount_filesystems() {
     [ -n "$swap_dev" ] && swapon $swap_dev
 }
 
+set_mirrors() {
+
+    headline "Set mirrors"
+
+    [ -n "$MIRROR" ] && echo "Server = $MIRROR" > /etc/pacman.d/mirrorlist
+
+    [[ -z "$MIRROR" && -n "$MIRROR_COUNTRY" ]] && reflector --verbose --country \'$MIRROR_COUNTRY\' -l 10 -p https --sort rate --save /etc/pacman.d/mirrorlist
+}
+
 install_base() {
 
     headline "Installing base system"
-
-    [ -n "$MIRROR" ] && echo "Server = $MIRROR" > /etc/pacman.d/mirrorlist
 
     pacstrap /mnt base base-devel linux linux-firmware
     genfstab -U /mnt >> /mnt/etc/fstab
